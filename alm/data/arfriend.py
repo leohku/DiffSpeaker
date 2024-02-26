@@ -1,5 +1,5 @@
 from .base import BASEDataModule
-from alm.data.voca import VOCASETDataset
+from alm.data.ARFriend import ARFriendDataset
 from transformers import Wav2Vec2Processor
 from collections import defaultdict
 
@@ -10,10 +10,12 @@ from tqdm import tqdm
 import librosa
 import numpy as np
 from multiprocessing import Pool
+import math
 
 
 def load_data(args):
     file, root_dir, processor, templates, audio_dir, vertice_dir = args
+    print("Loading data for " + file)
     if file.endswith('wav'):
         wav_path = os.path.join(root_dir, audio_dir, file)
         speech_array, sampling_rate = librosa.load(wav_path, sr=16000)
@@ -21,19 +23,22 @@ def load_data(args):
         key = file.replace("wav", "npy")
         result = {}
         result["audio"] = input_values
-        subject_id = "_".join(key.split("_")[:-1])
+        subject_id = key.split("_")[1]
         temp = templates[subject_id]
         result["name"] = file.replace(".wav", "")
         result["path"] = os.path.abspath(wav_path)
         result["template"] = temp.reshape((-1)) 
         vertice_path = os.path.join(root_dir, vertice_dir, file.replace("wav", "npy"))
         if not os.path.exists(vertice_path):
+            print("No vertices exist for " + file)
             return None
         else:
-            result["vertice"] = np.load(vertice_path,allow_pickle=True)[::2,:]
+            # result["vertice_path"] = vertice_path
+            result["vertice"] = np.load(vertice_path,allow_pickle=True)
+            print("Data loaded for " + file)
             return (key, result)
 
-class VOCASETDataModule(BASEDataModule):
+class ARFriendDataModule(BASEDataModule):
     def __init__(self,
                 cfg,
                 batch_size,
@@ -45,49 +50,49 @@ class VOCASETDataModule(BASEDataModule):
                             num_workers=num_workers,
                             collate_fn=collate_fn)
         self.save_hyperparameters(logger=False)
-        self.name = 'VOCASET'
-        self.Dataset = VOCASETDataset
+        self.name = 'ARFriend'
+        self.Dataset = ARFriendDataset
         self.cfg = cfg
         
-        # customized to VOCASET
+        # customized to ARFriend
         self.subjects = {
             'train': [
-                'FaceTalk_170728_03272_TA',
-                'FaceTalk_170904_00128_TA',
-                'FaceTalk_170725_00137_TA',
-                'FaceTalk_170915_00223_TA',
-                'FaceTalk_170811_03274_TA',
-                'FaceTalk_170913_03279_TA',
-                'FaceTalk_170904_03276_TA',
-                'FaceTalk_170912_03278_TA'
+                '001Sky',
+                '002Shirley',
+                '003Alan',
+                '005Richard',
+                '006Vasilisa',
+                '007Jessica',
+                '008Kunio',
             ],
             'val': [
-                'FaceTalk_170811_03275_TA',
-                'FaceTalk_170908_03277_TA'
+                '001Sky',
+                '002Shirley',
+                '003Alan',
+                '005Richard',
+                '006Vasilisa',
+                '007Jessica',
+                '008Kunio',
             ],
             'test': [
-                'FaceTalk_170809_00138_TA',
-                'FaceTalk_170731_00024_TA'
+                '001Sky',
+                '002Shirley',
+                '003Alan',
+                '005Richard',
+                '006Vasilisa',
+                '007Jessica',
+                '008Kunio',
             ]
-            # 'test': [
-            #     'FaceTalk_170728_03272_TA',
-            #     'FaceTalk_170904_00128_TA',
-            #     'FaceTalk_170725_00137_TA',
-            #     'FaceTalk_170915_00223_TA',
-            #     'FaceTalk_170811_03274_TA',
-            #     'FaceTalk_170913_03279_TA',
-            #     'FaceTalk_170904_03276_TA',
-            #     'FaceTalk_170912_03278_TA'
-            # ]
         }
 
-        self.root_dir = kwargs.get('data_root', 'datasets/vocaset')
+        self.root_dir = kwargs.get('data_root', 'datasets/arfriend')
         self.audio_dir = 'wav'
         self.vertice_dir = 'vertices_npy'
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
         self.template_file = 'templates.pkl'
 
-        self.nfeats = 15069
+        self.nfeats = 72147
+        self.segmented_append_seconds = 5
 
         # load
         data = defaultdict(dict)
@@ -104,13 +109,6 @@ class VOCASETDataModule(BASEDataModule):
                 # count += 1
                 # if count > 10:
                 #     break
-
-        # split dataset
-        self.data_splits = {
-            'train':[],
-            'val':[],
-            'test':[],
-        }
 
         motion_list = []
 
@@ -137,17 +135,10 @@ class VOCASETDataModule(BASEDataModule):
         # self.std = np.std(motion_list, axis=0)
 
         splits = {
-                    'train':range(1,41),
-                    'val':range(21,41),
-                    'test':range(21,41)
+                    'train':range(1,970),
+                    'val':range(306,638),
+                    'test':range(306,638)
                 }
-        
-        for k, v in data.items():
-            subject_id = "_".join(k.split("_")[:-1])
-            sentence_id = int(k.split(".")[0][-2:])
-            for sub in ['train', 'val', 'test']:
-                if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-                    self.data_splits[sub].append(v)
 
         # split dataset
         self.data_splits = {
@@ -155,19 +146,43 @@ class VOCASETDataModule(BASEDataModule):
             'val':[],
             'test':[],
         }
-
+        
+        # for k, v in data.items():
+        #     subject_id = k.split("_")[1]
+        #     sentence_id = int(k.split(".")[0][-3:])
+        #     for sub in ['train', 'val', 'test']:
+        #         if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
+        #             self.data_splits[sub].append(v)
+        
+        def segmented_append(data_list, orig_v, seconds=5):
+            audio_ticks = orig_v["audio"].shape[0]
+            for i in range(math.ceil(audio_ticks / (16000 * seconds))):
+                new_v = defaultdict(dict)
+                new_v["segment"] = i
+                # new_v["vertice_path"] = orig_v["vertice_path"]
+                new_v["name"] = orig_v["name"] + "-" + str(i)
+                new_v["path"] = orig_v["path"]
+                new_v["template"] = orig_v["template"]
+                if (i+1) * 16000 * seconds <= audio_ticks:
+                    new_v["audio"] = orig_v["audio"][i * 16000 * seconds : (i+1) * 16000 * seconds]
+                    new_v["vertice"] = orig_v["vertice"][i * 30 * seconds : (i+1) * 30 * seconds]
+                else:
+                    new_v["audio"] = orig_v["audio"][i * 16000 * seconds :]
+                    new_v["vertice"] = orig_v["vertice"][i * 30 * seconds :]
+                data_list.append(new_v)
+    
         for k, v in data.items():
-            subject_id = "_".join(k.split("_")[:-1])
-            sentence_id = int(k.split(".")[0][-2:])
+            subject_id = k.split("_")[1]
+            sentence_id = int(k.split(".")[0][-3:])
             for sub in ['train', 'val', 'test']:
                 if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-                    self.data_splits[sub].append(v)
+                    segmented_append(self.data_splits[sub], v, seconds=self.segmented_append_seconds)
 
         # self._sample_set = self.__getattr__("test_dataset")
-        # print("Data splits stats:")
-        # print(len(self.data_splits['train']))
-        # print(len(self.data_splits['val']))
-        # print(len(self.data_splits['test'])) 
+        print("Data splits stats:")
+        print(len(self.data_splits['train']))
+        print(len(self.data_splits['val']))
+        print(len(self.data_splits['test']))
 
     def __getattr__(self, item):
         # train_dataset/val_dataset etc cached like properties
@@ -180,7 +195,8 @@ class VOCASETDataModule(BASEDataModule):
                 self.__dict__[item_c] = self.Dataset(
                     data = self.data_splits[subset] ,
                     subjects_dict = self.subjects,
-                    data_type = subset
+                    data_type = subset,
+                    segmented_append_seconds = self.segmented_append_seconds
                 )
             return getattr(self, item_c)
         classname = self.__class__.__name__

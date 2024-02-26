@@ -108,6 +108,19 @@ def get_datasets(cfg, logger, phase='train'):
                 collate_fn=collate_fn,
             )
             datasets.append(dataset)
+        if dataset_name.lower() in ['arfriend']:
+            from .arfriend import ARFriendDataModule
+            data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")
+            collate_fn = vocaset_collate_fn
+            dataset = ARFriendDataModule(
+                cfg = cfg,
+                data_root = data_root,
+                batch_size=cfg.TRAIN.BATCH_SIZE,
+                num_workers=cfg.TRAIN.NUM_WORKERS,
+                debug=cfg.DEBUG,
+                collate_fn=collate_fn,
+            )
+            datasets.append(dataset)
         if dataset_name.lower() in ['voxcelebinsta']:
             from .voxceleb_insta import VoxCelebInstaDataModule
             data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")

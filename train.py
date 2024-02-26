@@ -22,6 +22,10 @@ def main():
     # create logger
     logger = create_logger(cfg, phase="train")
 
+    # Leo's change
+    torch.set_printoptions(precision=10)
+    torch.set_float32_matmul_precision('high')
+
     # resume
     if cfg.TRAIN.RESUME:
         resume = cfg.TRAIN.RESUME

@@ -6,7 +6,7 @@ from transformers import Wav2Vec2Model
 
 from alm.config import instantiate_from_config
 from alm.models.modeltype.base import BaseModel
-from alm.models.losses.voca import VOCALosses
+from alm.models.losses.voca import VOCALosses, MaskedConsistency, MaskedVelocityConsistency
 from alm.utils.demo_utils import animate
 from .base import BaseModel
 
@@ -21,8 +21,6 @@ import numpy as np
 
 from time import time as infer_time
 import pickle
-
-
 class DIFFUSION_BIAS(BaseModel):
 
     def __init__(self, cfg, datamodule, **kwargs):
@@ -44,6 +42,8 @@ class DIFFUSION_BIAS(BaseModel):
             key: self._losses["losses_" + key]
             for key in ["train", "test", "val", ] # "train_val"
         }
+        self.reconstruct = MaskedConsistency()
+        self.reconstruct_v = MaskedVelocityConsistency()
 
         # set up model
         self.audio_encoder = Wav2Vec2Model.from_pretrained(cfg.audio_encoder.model_name_or_path)
@@ -114,7 +114,12 @@ class DIFFUSION_BIAS(BaseModel):
                 batch['audio'][audio_mask] = 0
 
             rs_set = self._diffusion_forward(batch, batch_idx, phase="train")
-            loss = self.losses[split].update(rs_set)
+            
+            mask = rs_set['vertice_attention'].unsqueeze(-1)
+            loss1 = self.reconstruct(rs_set['vertice'], rs_set['vertice_pred'], mask)
+            loss2 = self.reconstruct_v(rs_set['vertice'], rs_set['vertice_pred'], mask)
+            loss = loss1 + loss2
+            self.losses[split].update(loss1, loss2, loss)
             return loss
 
 
@@ -133,7 +138,11 @@ class DIFFUSION_BIAS(BaseModel):
                 with torch.no_grad():
                     # same as the training, we use the autoregressive inference
                     rs_set = self._diffusion_forward(batch, batch_idx, phase="val")
-                    loss = self.losses[split].update(rs_set)
+                    mask = rs_set['vertice_attention'].unsqueeze(-1)
+                    loss1 = self.reconstruct(rs_set['vertice'], rs_set['vertice_pred'], mask)
+                    loss2 = self.reconstruct_v(rs_set['vertice'], rs_set['vertice_pred'], mask)
+                    loss = loss1 + loss2
+                    self.losses[split].update(loss1, loss2, loss) 
 
                     if loss is None:
                         return ValueError("loss is None")

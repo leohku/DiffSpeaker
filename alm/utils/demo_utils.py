@@ -241,7 +241,7 @@ def animate(vertices: np.array, wav_path: str, file_name: str, ply: str, fps: in
 
     template = Mesh(filename=ply)
     # determine biwi or flame
-    if "FLAME" in ply:
+    if ("FLAME" in ply) or ("00" in ply):
         template_type = "flame"
     elif "BIWI" in ply:
         template_type = "biwi"

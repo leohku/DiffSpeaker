@@ -79,6 +79,16 @@ class BaseModel(LightningModule):
     def test_epoch_end(self, outputs):
         return self.allsplit_epoch_end("test", outputs)
     
+    # def on_train_batch_start(self, batch, batch_idx):
+    #     self.prev_weights = [p.clone() for p in self.parameters()]
+    #     # print(f"Number of parameters: {len(list(self.parameters()))}")
+
+    # def on_train_batch_end(self, outputs, batch, batch_idx):
+    #     for i, p in enumerate(self.parameters()):
+    #         if not torch.eq(p.data, self.prev_weights[i].data).all():
+    #             print(f"Parameter {i} has changed!")
+    #     self.prev_weights = [p.clone() for p in self.parameters()]
+    
     # def on_save_checkpoint(self, checkpoint):
     #     # don't save audio_encoder to checkpoint
     #     state_dict = checkpoint['state_dict']

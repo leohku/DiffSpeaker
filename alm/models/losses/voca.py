@@ -118,31 +118,13 @@ class VOCALosses(Metric):
     #     lip_vertice = vertice.view(shape[0], shape[1], -1, 3)[:, :, mouth_map, :].view(shape[0], shape[1], -1)
     #     return lip_vertice
 
-    def update(self, rs_set):
-        # rs_set.keys() = dict_keys(['latent', 'latent_pred', 'vertice', 'vertice_recon', 'vertice_pred', 'vertice_attention'])
-
-        total: float = 0.0
-        # Compute the losses
-        # Compute instance loss
-
-        # padding mask
-        mask = rs_set['vertice_attention'].unsqueeze(-1)
-
+    def update(self, recon, recon_v, ttl):
         if self.split in ['losses_train', 'losses_val']: 
-            # vertice loss
-            total += self._update_loss("vertice_enc", rs_set['vertice'], rs_set['vertice_pred'], mask = mask)
-            total += self._update_loss("vertice_encv", rs_set['vertice'], rs_set['vertice_pred'], mask = mask)
-
-            # lip loss
-            # lip_vertice = self.vert2lip(rs_set['vertice'])
-            # lip_vertice_pred = self.vert2lip(rs_set['vertice_pred'])
-            # total += self._update_loss("lip_enc", lip_vertice, lip_vertice_pred, mask = mask)
-            # total += self._update_loss("lip_encv", lip_vertice, lip_vertice_pred, mask = mask)
-
-            self.total += total.detach()
+            self.vertice_enc += recon.detach()
+            self.vertice_encv += recon_v.detach()
+            self.total += ttl.detach()
             self.count += 1
-
-            return total
+            return ttl
         
         if self.split in ['losses_test']:
             raise ValueError(f"split {self.split} not supported")
