@@ -31,10 +31,10 @@ class ARFriendDataset(data.Dataset):
         file_name = self.data[index]["name"]
         file_path = self.data[index]["path"]
         audio = self.data[index]["audio"]
-        segment = self.data[index]["segment"]
-        vertice = self.data[index]["vertice"]
+        # segment = self.data[index]["segment"]
+        # vertice = self.data[index]["vertice"]
         # Experimented with on-demand data loading
-        # vertice = np.load(self.data[index]["vertice_path"], allow_pickle=True)
+        vertice = np.load(self.data[index]["vertice_path"])
         # vertice_len = vertice.shape[0]
         # if vertice_len >= segment * 30 * self.segmented_append_seconds:
         #     vertice = vertice[segment * 30 * self.segmented_append_seconds : (segment+1) * 30 * self.segmented_append_seconds]

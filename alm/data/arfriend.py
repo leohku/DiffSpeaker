@@ -15,6 +15,10 @@ import math
 
 def load_data(args):
     file, root_dir, processor, templates, audio_dir, vertice_dir = args
+    # Leo: temp hack to deal with /dev/shm memory limit
+    if file.startswith('20240128'):
+        print("Skipping " + file)
+        return None
     print("Loading data for " + file)
     if file.endswith('wav'):
         wav_path = os.path.join(root_dir, audio_dir, file)
@@ -34,7 +38,7 @@ def load_data(args):
             return None
         else:
             # result["vertice_path"] = vertice_path
-            result["vertice"] = np.load(vertice_path,allow_pickle=True)
+            # result["vertice"] = np.load(vertice_path,allow_pickle=True)
             print("Data loaded for " + file)
             return (key, result)
 
@@ -157,18 +161,19 @@ class ARFriendDataModule(BASEDataModule):
         def segmented_append(data_list, orig_v, seconds=5):
             audio_ticks = orig_v["audio"].shape[0]
             for i in range(math.ceil(audio_ticks / (16000 * seconds))):
+                name = orig_v["name"]
                 new_v = defaultdict(dict)
                 new_v["segment"] = i
-                # new_v["vertice_path"] = orig_v["vertice_path"]
-                new_v["name"] = orig_v["name"] + "-" + str(i)
+                new_v["name"] = name
+                new_v["vertice_path"] = f"/dev/shm/vertices_npy_{seconds}seg/{name}-{str(i)}.npy"
                 new_v["path"] = orig_v["path"]
                 new_v["template"] = orig_v["template"]
                 if (i+1) * 16000 * seconds <= audio_ticks:
                     new_v["audio"] = orig_v["audio"][i * 16000 * seconds : (i+1) * 16000 * seconds]
-                    new_v["vertice"] = orig_v["vertice"][i * 30 * seconds : (i+1) * 30 * seconds]
+                    # new_v["vertice"] = orig_v["vertice"][i * 30 * seconds : (i+1) * 30 * seconds]
                 else:
                     new_v["audio"] = orig_v["audio"][i * 16000 * seconds :]
-                    new_v["vertice"] = orig_v["vertice"][i * 30 * seconds :]
+                    # new_v["vertice"] = orig_v["vertice"][i * 30 * seconds :]
                 data_list.append(new_v)
     
         for k, v in data.items():

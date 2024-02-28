@@ -1,13 +1,13 @@
 NAME: diffspeaker_wav2vec2_arfriend # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [1] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:
   #---------------------------------
   DATASETS: ['arfriend'] # Training datasets
-  NUM_WORKERS: 1 # Number of workers
+  NUM_WORKERS: 4 # Number of workers
   BATCH_SIZE: 32 # Size of batches
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch
@@ -83,7 +83,7 @@ DEMO:
 
 # Logger configuration
 LOGGER:
-  SACE_CHECKPOINT_EPOCH: 200
+  SACE_CHECKPOINT_EPOCH: 10
   LOG_EVERY_STEPS: 100
   VAL_EVERY_STEPS: 100000 # 200
   TENSORBOARD: True

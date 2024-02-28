@@ -176,6 +176,7 @@ def main():
 
     if len(cfg.DEVICE) > 1:
         ddp_strategy = "ddp" #DDPStrategy(find_unused_parameters=False)
+        # ddp_strategy = DDPStrategy(find_unused_parameters=False)
     else:
         ddp_strategy = None
 
