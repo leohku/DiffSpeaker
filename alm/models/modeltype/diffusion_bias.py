@@ -84,7 +84,9 @@ class DIFFUSION_BIAS(BaseModel):
         self.guidance_uncondp = cfg.model.guidance_uncondp if hasattr(cfg.model, "guidance_uncondp") else 0.0
         self.guidance_scale = cfg.model.guidance_scale if hasattr(cfg.model, "guidance_scale") else 1.0
         # assert self.guidance_scale >= 0.0 and self.guidance_scale <= 1.0
-        assert self.guidance_scale >= 0.0 
+        # assert self.guidance_scale >= 0.0
+        # no guidance in single or two person generation for ARFriend
+        assert self.guidance_scale == 0.0 and self.guidance_uncondp == 0.0
         self.do_classifier_free_guidence = self.guidance_scale > 0.0
 
         self.smooth_output = False
@@ -109,9 +111,10 @@ class DIFFUSION_BIAS(BaseModel):
         """
         # training
         if split == "train":
-            if self.guidance_uncondp > 0: # we randomly mask the audio feature
-                audio_mask = torch.rand(batch['audio'].shape[0]) < self.guidance_uncondp
-                batch['audio'][audio_mask] = 0
+            # Unused in two person generation
+            # if self.guidance_uncondp > 0: # we randomly mask the audio feature
+            #     audio_mask = torch.rand(batch['audio'].shape[0]) < self.guidance_uncondp
+            #     batch['audio'][audio_mask] = 0
 
             rs_set = self._diffusion_forward(batch, batch_idx, phase="train")
             
@@ -150,8 +153,8 @@ class DIFFUSION_BIAS(BaseModel):
                     loss_list.append(loss)
 
                 # visualize the result for the first id and the first batch
-                if batch_idx == 0 and idx == 0:
-                    self._visualize(batch, rs_set)
+                # if batch_idx == 0 and idx == 0:
+                #     self._visualize(batch, rs_set)
 
             loss = torch.stack(loss_list, dim=0).mean(dim=0)
             return loss
@@ -246,6 +249,7 @@ class DIFFUSION_BIAS(BaseModel):
                     # the code is a little bit messy, sorry for that
                     result_dir = self.cfg.FOLDER_EXP + '/results_{}'.format(exp)
                     os.makedirs(result_dir, exist_ok=True)
+                    # Leo: This will throw an error because file_name is not correct in 2 person setup
                     result_file = batch['file_name'][0].split('/')[-1].split('.')[0] + '_condition_' + str(id_idx) + '.pkl'
 
                     with open(os.path.join(result_dir, result_file), 'wb') as f:
@@ -418,9 +422,23 @@ class DIFFUSION_BIAS(BaseModel):
         hidden_state = self._audio_resize(
             hidden_state, 
             output_len = length # if vertice is not given, we use the full length of the audio
-        )    
-
+        )
         hidden_state = self.denoiser.audio_feature_map(hidden_state) # hidden_state.shape = [batch_size, seq_len, latent_dim]
+        return hidden_state
+
+    def _audio_2_hidden_2(self, audio_male, audio_female, audio_attention, length = None):
+        hidden_state_male = self.audio_encoder(audio_male, attention_mask = audio_attention).last_hidden_state
+        hidden_state_female = self.audio_encoder(audio_female, attention_mask = audio_attention).last_hidden_state
+        hidden_state_male = self._audio_resize(
+            hidden_state_male,
+            output_len = length
+        )
+        hidden_state_female = self._audio_resize(
+            hidden_state_female,
+            output_len = length 
+        )
+        hidden_state = torch.cat((hidden_state_male, hidden_state_female), dim=2)
+        hidden_state = self.denoiser.audio_feature_map2(hidden_state)
         return hidden_state
     
     def _diffusion_forward(self, batch, batch_idx, phase):
@@ -432,7 +450,7 @@ class DIFFUSION_BIAS(BaseModel):
                 template (torch.Tensor): [batch_size, vert_dim]
                 vertice (torch.Tensor): [batch_size, vert_len, vert_dim ]
                 vertice_attention (torch.Tensor): [batch_size, vert_len]
-                audio (torch.Tensor): [batch_size, aud_len]
+                audio (torch.Tensor): [batch_size, aud_len] (or audio_male and audio_female)
                 audio_attention (torch.Tensor): [batch_size, aud_len]
                 id (torch.Tensor): [batch_size, id_dim]
                 phase (str): eihter 'train' or 'val'
@@ -440,7 +458,12 @@ class DIFFUSION_BIAS(BaseModel):
         """
 
         # process audio condition
-        hidden_state = self._audio_2_hidden(batch['audio'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None) # hidden_state.shape = [batch_size, seq_len, latent_dim]
+        if 'audio' in batch:
+            hidden_state = self._audio_2_hidden(batch['audio'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None) # hidden_state.shape = [batch_size, seq_len, latent_dim]
+        else:
+            # audio_male and audio_female is in batch
+            hidden_state = self._audio_2_hidden_2(batch['audio_male'], batch['audio_female'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None)
+            
         if 'vertice_attention' not in batch:
             # if the vertice_attention is not given, we assume that all the vertices are valid, so we set the attention to be all ones
             batch['vertice_attention'] = torch.ones(

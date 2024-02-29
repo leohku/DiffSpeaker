@@ -41,6 +41,9 @@ class Adpt_Bias_Denoiser(nn.Module):
 
         # audio projecter
         self.audio_feature_map = nn.Linear(audio_encoded_dim, latent_dim)
+        
+        # audio projecter for 2 persons
+        self.audio_feature_map2 = nn.Linear(audio_encoded_dim * 2, latent_dim)
 
         # motion projecter
         self.vertice_map = nn.Linear(nfeats, latent_dim)

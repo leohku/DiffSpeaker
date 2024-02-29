@@ -1,0 +1,9 @@
+FOLDER: './experiments/arfriend2' # Experiment files saving path
+
+TEST:
+  FOLDER: './results' # Testing files saving path
+
+DATASET:
+  ARFRIEND2:
+    ROOT: ./datasets/arfriend
+

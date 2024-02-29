@@ -28,6 +28,21 @@ def vocaset_collate_fn(batch):
     }
     return adapted_batch
 
+def arfriend2_collate_fn(batch):
+    notnone_batches = [b for b in batch if b is not None]
+    adapted_batch = {
+        'audio_male': collate_tensors([b['audio_male'].float() for b in notnone_batches]),
+        'audio_female': collate_tensors([b['audio_female'].float() for b in notnone_batches]),
+        'audio_attention': collate_tensors([b['audio_attention'] for b in notnone_batches]),
+        'vertice': collate_tensors([b['vertice'].float() for b in notnone_batches]),
+        'vertice_attention': collate_tensors([b['vertice_attention'] for b in notnone_batches]),
+        'template': collate_tensors([b['template'].float() for b in notnone_batches]),
+        'id': collate_tensors([b['id'].float() for b in notnone_batches]),
+        'file_name': [b['file_name'] for b in notnone_batches],
+        'file_path': [b['file_path'] for b in notnone_batches],
+    }
+    return adapted_batch 
+
 def voxcelebinsta_collate_fn(batch):
     notnone_batches = [b for b in batch if b is not None]
     # notnone_batches.sort(key=lambda x: x['vertice_length'], reverse=True)
@@ -121,6 +136,19 @@ def get_datasets(cfg, logger, phase='train'):
                 collate_fn=collate_fn,
             )
             datasets.append(dataset)
+        if dataset_name.lower() in ['arfriend2']:
+            from .arfriend2 import ARFriend2DataModule
+            data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")
+            collate_fn = arfriend2_collate_fn
+            dataset = ARFriend2DataModule(
+                cfg = cfg,
+                data_root = data_root,
+                batch_size=cfg.TRAIN.BATCH_SIZE,
+                num_workers=cfg.TRAIN.NUM_WORKERS,
+                debug=cfg.DEBUG,
+                collate_fn=collate_fn,
+            )
+            datasets.append(dataset) 
         if dataset_name.lower() in ['voxcelebinsta']:
             from .voxceleb_insta import VoxCelebInstaDataModule
             data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")
