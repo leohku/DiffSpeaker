@@ -534,11 +534,18 @@ class DIFFUSION_BIAS(BaseModel):
         """
 
         if 'audio_attention' not in batch:
-            # if the audio_attention is not given, we assume that all the audio is valid, so we set the attention to be all ones
-            batch['audio_attention'] = torch.ones(
-                batch['audio'].shape[0], 
-                batch['audio'].shape[1], 
-            ).long().to(batch['audio'].device) # this attention should be long type
+            if 'audio' in batch:
+                # if the audio_attention is not given, we assume that all the audio is valid, so we set the attention to be all ones
+                batch['audio_attention'] = torch.ones(
+                    batch['audio'].shape[0], 
+                    batch['audio'].shape[1], 
+                ).long().to(batch['audio'].device) # this attention should be long type
+            else:
+               # two person generation case
+                batch['audio_attention'] = torch.ones(
+                    batch['audio_male'].shape[0], 
+                    batch['audio_male'].shape[1], 
+                ).long().to(batch['audio_male'].device) # this attention should be long type 
 
         if 'id' not in batch:
             # if the id is not given, we use the id of the first person in the training set

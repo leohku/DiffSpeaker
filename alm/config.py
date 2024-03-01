@@ -94,6 +94,18 @@ def parse_args(phase="train"):
             help="input text and lengths with txt format",
         )
         group.add_argument(
+            "--example_male",
+            type=str,
+            required=False,
+            help="male input audio" 
+        )
+        group.add_argument(
+            "--example_female",
+            type=str,
+            required=False,
+            help="female input audio"
+        )
+        group.add_argument(
             "--out_dir",
             type=str,
             required=False,
@@ -179,6 +191,8 @@ def parse_args(phase="train"):
         cfg.DEMO.RENDER = params.render
         cfg.DEMO.FRAME_RATE = params.frame_rate
         cfg.DEMO.EXAMPLE = params.example
+        cfg.DEMO.EXAMPLE_MALE = params.example_male
+        cfg.DEMO.EXAMPLE_FEMALE = params.example_female
         cfg.DEMO.CHECKPOINTS = params.checkpoint
         cfg.DEMO.TEMPLATE = params.template
         cfg.DEMO.ID = params.id

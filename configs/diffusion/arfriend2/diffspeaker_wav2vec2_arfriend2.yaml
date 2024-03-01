@@ -75,7 +75,6 @@ model:
   smooth_output: True
 
 DEMO:
-  EAMPLE: null
   ID: null
   TEMPLATE: "datasets/arfriend/templates.pkl"
   PLY: "datasets/arfriend/templates/001Sky.obj"
