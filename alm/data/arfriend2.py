@@ -18,9 +18,10 @@ def load_data(args):
     files, root_dir, processor, templates, audio_dir, vertice_dir = args
     name = files[0].split('_')[0] + '_' + files[0].split('.')[0].split('_')[2]
     # Leo: temp hack to deal with /dev/shm memory limit
-    # if files[0].startswith('20240128'):
-    #     print("Skipping " + name)
-    #     return None
+    # for date in ['20240128']:
+    #     if files[0].startswith(date):
+    #         print("Skipping " + name)
+    #         return None
     print("Loading data for " + name)
     wav_paths = [os.path.join(root_dir, audio_dir, f.replace(".npy", ".wav")) for f in files]
     speech_arrays = [librosa.load(wp, sr=16000)[0] for wp in wav_paths]
@@ -67,10 +68,18 @@ class ARFriend2DataModule(BASEDataModule):
                 '20240128'
             ],
             'val': [
-                '20240126'
+                '20231119',
+                '20231126',
+                '20231208',
+                '20240126',
+                '20240128'
             ],
             'test': [
-                '20240126'
+                '20231119',
+                '20231126',
+                '20231208',
+                '20240126',
+                '20240128'
             ]
         }
 
@@ -80,6 +89,8 @@ class ARFriend2DataModule(BASEDataModule):
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
         self.template_file = 'templates.pkl'
         self.rel_file = 'rel.pkl'
+        self.train_list_file = 'train_list.txt'
+        self.test_list_file = 'test_list.txt'
 
         self.nfeats = 72147*2
         self.segmented_append_seconds = 5
@@ -92,6 +103,12 @@ class ARFriend2DataModule(BASEDataModule):
         if multimodal:
             with open(os.path.join(self.root_dir, self.rel_file), 'rb') as fin:
                 rel = pickle.load(fin)
+        
+        with open(os.path.join(self.root_dir, self.train_list_file), 'r') as fin:
+            train_list = [line.strip() for line in fin]
+        
+        with open(os.path.join(self.root_dir, self.test_list_file), 'r') as fin:
+            test_list = [line.strip() for line in fin]
         
         args_list = []
         processed_pairs = []
@@ -113,11 +130,12 @@ class ARFriend2DataModule(BASEDataModule):
                     key, value = result
                     data[key] = value
 
-        splits = {
-                    'train':range(33,970),
-                    'val':range(1,33),
-                    'test':range(1,33)
-                }
+        # numeric splits
+        # splits = {
+        #             'train':range(33,970),
+        #             'val':range(1,33),
+        #             'test':range(1,33)
+        #         }
 
         # split dataset
         self.data_splits = {
@@ -146,12 +164,22 @@ class ARFriend2DataModule(BASEDataModule):
                         new_v["rel"] = rel[new_v["name"]][i]
                 data_list.append(new_v)
     
+        # numeric splits
+        # for k, v in data.items():
+        #     date = k.split("_")[0]
+        #     sentence_id = int(k.split("_")[1])
+        #     for env in ['train', 'val', 'test']:
+        #         if date in self.dates[env] and sentence_id in splits[env]:
+        #             segmented_append(self.data_splits[env], v, seconds=self.segmented_append_seconds)
+        
         for k, v in data.items():
             date = k.split("_")[0]
-            sentence_id = int(k.split("_")[1])
-            for env in ['train', 'val', 'test']:
-                if date in self.dates[env] and sentence_id in splits[env]:
-                    segmented_append(self.data_splits[env], v, seconds=self.segmented_append_seconds)
+            if date in self.dates['train'] and k in train_list:
+                segmented_append(self.data_splits['train'], v, seconds=self.segmented_append_seconds)
+            if date in self.dates['val'] and k in test_list:
+                segmented_append(self.data_splits['val'], v, seconds=self.segmented_append_seconds)
+            if date in self.dates['test'] and k in test_list:
+                segmented_append(self.data_splits['test'], v, seconds=self.segmented_append_seconds) 
 
         print("Data splits stats:")
         print(len(self.data_splits['train']))
