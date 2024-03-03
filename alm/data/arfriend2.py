@@ -18,9 +18,9 @@ def load_data(args):
     files, root_dir, processor, templates, audio_dir, vertice_dir = args
     name = files[0].split('_')[0] + '_' + files[0].split('.')[0].split('_')[2]
     # Leo: temp hack to deal with /dev/shm memory limit
-    if files[0].startswith('20240128'):
-        print("Skipping " + name)
-        return None
+    # if files[0].startswith('20240128'):
+    #     print("Skipping " + name)
+    #     return None
     print("Loading data for " + name)
     wav_paths = [os.path.join(root_dir, audio_dir, f.replace(".npy", ".wav")) for f in files]
     speech_arrays = [librosa.load(wp, sr=16000)[0] for wp in wav_paths]
@@ -48,6 +48,7 @@ class ARFriend2DataModule(BASEDataModule):
                 num_workers,
                 collate_fn = None,
                 phase="train",
+                multimodal=False,
                 **kwargs):
         super().__init__(batch_size=batch_size,
                             num_workers=num_workers,
@@ -78,6 +79,7 @@ class ARFriend2DataModule(BASEDataModule):
         self.vertice_dir = 'vertices_npy'
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
         self.template_file = 'templates.pkl'
+        self.rel_file = 'rel.pkl'
 
         self.nfeats = 72147*2
         self.segmented_append_seconds = 5
@@ -86,6 +88,10 @@ class ARFriend2DataModule(BASEDataModule):
         data = defaultdict(dict)
         with open(os.path.join(self.root_dir, self.template_file), 'rb') as fin:
             templates = pickle.load(fin, encoding='latin1')
+        
+        if multimodal:
+            with open(os.path.join(self.root_dir, self.rel_file), 'rb') as fin:
+                rel = pickle.load(fin)
         
         args_list = []
         processed_pairs = []
@@ -133,6 +139,11 @@ class ARFriend2DataModule(BASEDataModule):
                 new_v["segment"] = i
                 new_v["audio"] = audio
                 new_v["vertice_path"] = vertice_paths
+                if multimodal:
+                    if len(rel[new_v["name"]]) <= i: # out-of-bounds protection
+                        new_v["rel"] = rel[new_v["name"]][len(rel[new_v["name"]]) - 1]
+                    else:
+                        new_v["rel"] = rel[new_v["name"]][i]
                 data_list.append(new_v)
     
         for k, v in data.items():
@@ -146,6 +157,7 @@ class ARFriend2DataModule(BASEDataModule):
         print(len(self.data_splits['train']))
         print(len(self.data_splits['val']))
         print(len(self.data_splits['test']))
+        print(f"Multimodal: {'on' if multimodal else 'off'}")
 
     def __getattr__(self, item):
         # train_dataset/val_dataset etc cached like properties

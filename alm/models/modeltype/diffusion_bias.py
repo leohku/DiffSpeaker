@@ -283,7 +283,7 @@ class DIFFUSION_BIAS(BaseModel):
                 
             return metrics_list
     
-    def _memory_mask(self, hidden_attention, ):
+    def _memory_mask(self, hidden_attention, multimodal=False):
         """
         Create memory_mask for transformer decoder, which is used to mask the padding information
         Args:
@@ -296,7 +296,10 @@ class DIFFUSION_BIAS(BaseModel):
             memory_mask = self.denoiser.memory_bi_bias[:hidden_attention.shape[1], :hidden_attention.shape[1]]
 
             # since the adapter is used, we need to unmask another position to make the adapter work, this position is the first and the second positions of the memory_mask
-            adpater_mask = torch.zeros_like(memory_mask[:, :2]) # [1, source_len], since the apdater length = id + time = 2
+            if multimodal:
+                adpater_mask = torch.zeros_like(memory_mask[:, :3]) # [1, source_len], since the apdater length = id + rel + time = 3
+            else:
+                adpater_mask = torch.zeros_like(memory_mask[:, :2]) # [1, source_len], since the apdater length = id + time = 2
             memory_mask = torch.cat([adpater_mask, memory_mask], dim = 1) # [source_len, latent_len + 2]
 
             # # visualize the attention bias using sns.heatmap
@@ -322,7 +325,7 @@ class DIFFUSION_BIAS(BaseModel):
         else:
             return None
         
-    def _tgt_mask(self, vertice_attention, ):
+    def _tgt_mask(self, vertice_attention, multimodal=False):
         """
         Create tgt_key_padding_mask for transformer decoder
         Args:
@@ -334,7 +337,10 @@ class DIFFUSION_BIAS(BaseModel):
         if self.denoiser.use_tgt_attn_bias:
             batch_size = vertice_attention.shape[0]
             tgt_mask = self.denoiser.target_bi_bias[:, :vertice_attention.shape[1], :vertice_attention.shape[1]] # [num_heads, target_len, target_len]
-            adapter_mask = torch.zeros_like(tgt_mask[..., :2]) # [num_heads, target_len, 2], since the apdater length = id + time = 2
+            if multimodal:
+                adapter_mask = torch.zeros_like(tgt_mask[..., :3]) # [num_heads, target_len, 3], since the apdater length = id + rel + time = 3
+            else:
+                adapter_mask = torch.zeros_like(tgt_mask[..., :2]) # [num_heads, target_len, 2], since the apdater length = id + time = 2
             tgt_mask = torch.cat([adapter_mask, tgt_mask], dim = -1) # [num_heads, target_len, target_len + 2]
 
             # # visualize the attention bias using sns.heatmap
@@ -359,7 +365,7 @@ class DIFFUSION_BIAS(BaseModel):
         else:
             return None
 
-    def _mem_key_padding_mask(self, vertice_attention):
+    def _mem_key_padding_mask(self, vertice_attention, multimodal=False):
         """
         Create mem_key_padding_mask for transformer decoder, which is used to mask the padding information
         Args:
@@ -368,13 +374,16 @@ class DIFFUSION_BIAS(BaseModel):
 
         # since the adapter is used, we need to unmask another position to make the adapter work
         # this position is the first and the second positions of the mem_key_padding_mask
-        adpater_mask = torch.ones_like(vertice_attention[:, :2]) # [batch_size, 2], since the apdater length = id + time = 2
+        if multimodal:
+            adpater_mask = torch.ones_like(vertice_attention[:, :3]) # [batch_size, 3], since the apdater length = id + rel + time = 3
+        else:
+            adpater_mask = torch.ones_like(vertice_attention[:, :2]) # [batch_size, 2], since the apdater length = id + time = 2
         vertice_attention = torch.cat([adpater_mask, vertice_attention], dim = 1) # [batch_size, source_len + 2]
 
         # mask with 1 means that the position is masked
         return ~vertice_attention.bool()
     
-    def _tgt_key_padding_mask(self, vertice_attention):
+    def _tgt_key_padding_mask(self, vertice_attention, multimodal=False):
         """
         Create tgt_key_padding_mask for transformer decoder, which is used to mask the padding information
         Args:
@@ -383,7 +392,10 @@ class DIFFUSION_BIAS(BaseModel):
         # since the adapter is used, we need to unmask another position to make the adapter work
         # this position is the first and the second positions of the tgt_key_padding_mask
 
-        adpater_mask = torch.ones_like(vertice_attention[:, :2])
+        if multimodal:
+            adpater_mask = torch.ones_like(vertice_attention[:, :3])
+        else:
+            adpater_mask = torch.ones_like(vertice_attention[:, :2])
         vertice_attention = torch.cat([adpater_mask, vertice_attention], dim = 1)
 
         # mask with 1 means that the position is masked
@@ -482,6 +494,7 @@ class DIFFUSION_BIAS(BaseModel):
                 hidden_state, 
                 batch['id'],
                 vertice_attention = batch['vertice_attention'],
+                rel = batch['rel'] if 'rel' in batch else None
             ) + template # vertice_output.shape = [batch_size, vert_len, vert_dim]
         
         elif phase == 'val':
@@ -501,6 +514,7 @@ class DIFFUSION_BIAS(BaseModel):
                 batch['id'],
                 vertice_attention = batch['vertice_attention'],
                 silent_hidden_state = silent_hidden_state,
+                rel = batch['rel'] if 'rel' in batch else None
             ) + template # vertice_output.shape = [batch_size, vert_len, vert_dim]
             
             if self.smooth_output:
@@ -588,6 +602,7 @@ class DIFFUSION_BIAS(BaseModel):
         hidden_state: torch.Tensor,
         id: torch.Tensor,
         vertice_attention: Optional[torch.Tensor] = None,
+        rel: Optional[torch.Tensor] = None
     ):  
         """
         Perform the diffusion forward process during training
@@ -596,10 +611,16 @@ class DIFFUSION_BIAS(BaseModel):
             hidden_state (torch.Tensor): [batch_size, seq_len, latent_dim], the audio feature, padding may included
             id (torch.Tensor): [batch_size, id_dim], the id of the subject
             vertice_attention (torch.Tensor): [batch_size, vert_len], the attention of the vertices to indicate which vertices are valid, since the audio feature has the same length as the vertices, the vertice_attention should be the same length as the hidden_state
+            rel (torch.Tensor): [batch_size, 3], the sin, cos head angle, as well as relative body distance
         """
+        multimodal = True if rel is not None else False
 
         # extract the id style
         object_emb = self.denoiser.obj_vector(torch.argmax(id, dim = 1)).unsqueeze(1) # object_emb.shape = [batch_size, 1, latent_dim]
+        
+        # extract the multimodal condition
+        if multimodal:
+            rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1)
 
         # sample noise
         noise = torch.randn_like(vertice_input) # noise.shape = [batch_size, vert_len, vert_dim]
@@ -620,16 +641,21 @@ class DIFFUSION_BIAS(BaseModel):
             timesteps,
         ) # noise_input.shape = [batch_size, vert_len, vert_dim]
 
+        if multimodal:
+            adapter = torch.concat([object_emb, rel_emb], dim=1)
+        else:
+            adapter = object_emb # object_emb.shape = [batch_size, 1, latent_dim]
+
         # predict the noise or the input
         vertice_pred = self.denoiser(
             vertice_input = noise_input, # noise_input.shape = [batch_size, vert_len, vert_dim]
             hidden_state = hidden_state, # hidden_state.shape = [batch_size, seq_len, latent_dim]
             timesteps = timesteps, # timesteps.shape = [batch_size]
-            adapter = object_emb, # object_emb.shape = [batch_size, 1, latent_dim]
-            tgt_mask = self._tgt_mask(vertice_attention), # tgt_mask.shape = [vert_len, vert_len]
-            memory_mask = self._memory_mask(vertice_attention), # memory_mask.shape = [vert_len, seq_len]
-            tgt_key_padding_mask = self._tgt_key_padding_mask(vertice_attention), # tgt_key_padding_mask.shape = [batch_size, vert_len]
-            memory_key_padding_mask = self._mem_key_padding_mask(vertice_attention), # memory_key_padding_mask.shape = [batch_size, seq_len]
+            adapter = adapter,
+            tgt_mask = self._tgt_mask(vertice_attention, multimodal=multimodal), # tgt_mask.shape = [vert_len, vert_len]
+            memory_mask = self._memory_mask(vertice_attention, multimodal=multimodal), # memory_mask.shape = [vert_len, seq_len]
+            tgt_key_padding_mask = self._tgt_key_padding_mask(vertice_attention, multimodal=multimodal), # tgt_key_padding_mask.shape = [batch_size, vert_len]
+            memory_key_padding_mask = self._mem_key_padding_mask(vertice_attention, multimodal=multimodal), # memory_key_padding_mask.shape = [batch_size, seq_len]
         )
 
         return vertice_pred
@@ -640,6 +666,7 @@ class DIFFUSION_BIAS(BaseModel):
         id: torch.Tensor,
         vertice_attention: torch.Tensor,
         silent_hidden_state: Optional[torch.Tensor] = None,
+        rel: Optional[torch.Tensor] = None
     ):  
         """
         Perform the diffusion reverse process during inference
@@ -648,10 +675,15 @@ class DIFFUSION_BIAS(BaseModel):
             id (torch.Tensor): [batch_size, id_dim], the id of the subject
             vertice_attention (torch.Tensor): [batch_size, vert_len], the attention of the vertices to indicate which vertices are valid, since the audio feature has the same length as the vertices, the vertice_attention should be the same length as the hidden_state
         """
+        multimodal = True if rel is not None else False
 
         # extract the id style
         object_emb = self.denoiser.obj_vector(torch.argmax(id, dim = 1)).unsqueeze(1) # object_emb.shape = [batch_size, 1, latent_dim]
-
+        
+        # extract the multimodal condition
+        if multimodal:
+            rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1)
+        
         # sample noise
         vertices = torch.randn(
             (
@@ -680,6 +712,11 @@ class DIFFUSION_BIAS(BaseModel):
             vertice_attention = torch.cat([vertice_attention, ] * 2, dim = 0) # vertice_attention.shape = [batch_size * 2, vert_len]
             object_emb = torch.cat([object_emb, ] * 2, dim = 0) # object_emb.shape = [batch_size * 2, 1, latent_dim]
 
+        if multimodal:
+            adapter = torch.concat([object_emb, rel_emb], dim=1)
+        else:
+            adapter = object_emb # object_emb.shape = [batch_size, 1, latent_dim]
+        
         # perform denoising
         for i, t in enumerate(timesteps):
             if silent_hidden_state is not None: # self.do_classifier_free_guidence is True
@@ -693,11 +730,11 @@ class DIFFUSION_BIAS(BaseModel):
                 vertice_input = vertices, # vertices.shape = [batch_size, vert_len, latent_dim]
                 hidden_state = hidden_state, # hidden_state.shape = [batch_size, seq_len, latent_dim]
                 timesteps = t.expand(hidden_state.shape[0]), # timesteps.shape = [batch_size]
-                adapter = object_emb, # object_emb.shape = [batch_size, 1, latent_dim]
-                tgt_mask = self._tgt_mask(vertice_attention), # tgt_mask.shape = [vert_len, vert_len]
-                memory_mask = self._memory_mask(vertice_attention), # memory_mask.shape = [vert_len, seq_len]
-                tgt_key_padding_mask = self._tgt_key_padding_mask(vertice_attention), # tgt_key_padding_mask.shape = [batch_size, vert_len]
-                memory_key_padding_mask = self._mem_key_padding_mask(vertice_attention), # memory_key_padding_mask.shape = [batch_size, seq_len]
+                adapter = adapter,
+                tgt_mask = self._tgt_mask(vertice_attention, multimodal=multimodal), # tgt_mask.shape = [vert_len, vert_len]
+                memory_mask = self._memory_mask(vertice_attention, multimodal=multimodal), # memory_mask.shape = [vert_len, seq_len]
+                tgt_key_padding_mask = self._tgt_key_padding_mask(vertice_attention, multimodal=multimodal), # tgt_key_padding_mask.shape = [batch_size, vert_len]
+                memory_key_padding_mask = self._mem_key_padding_mask(vertice_attention, multimodal=multimodal), # memory_key_padding_mask.shape = [batch_size, seq_len]
             )
             
             # perform guided denoising step

@@ -106,6 +106,18 @@ def parse_args(phase="train"):
             help="female input audio"
         )
         group.add_argument(
+            "--angle",
+            type=str,
+            required=False,
+            help="relative head angle in degrees"
+        )
+        group.add_argument(
+            "--distance",
+            type=str,
+            required=False,
+            help="relative distance in meters"
+        )
+        group.add_argument(
             "--out_dir",
             type=str,
             required=False,
@@ -193,6 +205,8 @@ def parse_args(phase="train"):
         cfg.DEMO.EXAMPLE = params.example
         cfg.DEMO.EXAMPLE_MALE = params.example_male
         cfg.DEMO.EXAMPLE_FEMALE = params.example_female
+        cfg.DEMO.ANGLE = params.angle
+        cfg.DEMO.DISTANCE = params.distance
         cfg.DEMO.CHECKPOINTS = params.checkpoint
         cfg.DEMO.TEMPLATE = params.template
         cfg.DEMO.ID = params.id

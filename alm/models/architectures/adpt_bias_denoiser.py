@@ -101,6 +101,10 @@ class Adpt_Bias_Denoiser(nn.Module):
         # style embedding
         self.obj_vector = nn.Embedding(id_dim, latent_dim * num_layers, )
 
+        # multimodal embedding
+        # sin, cos angle of head, relative distance in meters
+        self.rel_vector = nn.Linear(3, latent_dim)
+
         # whether we do not use cross attention
         self.no_cross = no_cross
 

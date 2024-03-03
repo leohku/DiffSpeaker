@@ -40,6 +40,9 @@ class ARFriend2Dataset(data.Dataset):
             vertice_female = vertice_female[:length]
         vertice = np.hstack((vertice_male, vertice_female))
         template = np.concatenate((self.data[index]["template"][self.data[index]["male_index"]], self.data[index]["template"][1 - self.data[index]["male_index"]]))
+
+        if "rel" in self.data[index]:
+            rel = np.array(self.data[index]["rel"])
         
         if self.data_type == "train":
             date = file_name.split("_")[0]
@@ -65,11 +68,8 @@ class ARFriend2Dataset(data.Dataset):
             'file_path':file_path
         }
         
-        # for i in item:
-        #     if torch.is_tensor(item[i]):
-        #         print(i, item[i].shape)
-        #     else:
-        #         print(i, item[i])
+        if "rel" in self.data[index]:
+            item['rel'] = torch.FloatTensor(rel)
         
         return item
 
