@@ -16,9 +16,9 @@ import math
 def load_data(args):
     file, root_dir, processor, templates, audio_dir, vertice_dir = args
     # Leo: temp hack to deal with /dev/shm memory limit
-    if file.startswith('20240128'):
-        print("Skipping " + file)
-        return None
+    # if file.startswith('20240128'):
+    #     print("Skipping " + file)
+    #     return None
     print("Loading data for " + file)
     if file.endswith('wav'):
         wav_path = os.path.join(root_dir, audio_dir, file)
@@ -37,8 +37,6 @@ def load_data(args):
             print("No vertices exist for " + file)
             return None
         else:
-            # result["vertice_path"] = vertice_path
-            # result["vertice"] = np.load(vertice_path,allow_pickle=True)
             print("Data loaded for " + file)
             return (key, result)
 
@@ -94,6 +92,8 @@ class ARFriendDataModule(BASEDataModule):
         self.vertice_dir = 'vertices_npy'
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
         self.template_file = 'templates.pkl'
+        self.train_list_file = 'train_list.txt'
+        self.test_list_file = 'test_list.txt'
 
         self.nfeats = 72147
         self.segmented_append_seconds = 5
@@ -102,6 +102,12 @@ class ARFriendDataModule(BASEDataModule):
         data = defaultdict(dict)
         with open(os.path.join(self.root_dir, self.template_file), 'rb') as fin:
             templates = pickle.load(fin, encoding='latin1')
+
+        with open(os.path.join(self.root_dir, self.train_list_file), 'r') as fin:
+            train_list = [line.strip() for line in fin]
+        
+        with open(os.path.join(self.root_dir, self.test_list_file), 'r') as fin:
+            test_list = [line.strip() for line in fin]
 
         count = 0
         args_list = []
@@ -114,35 +120,19 @@ class ARFriendDataModule(BASEDataModule):
                 # if count > 10:
                 #     break
 
-        motion_list = []
-
-        if True: # multi-process
-            with Pool(processes=os.cpu_count()) as pool:
-                results = pool.map(load_data, args_list)
-                for result in results:
-                    if result is not None:
-                        key, value = result
-                        data[key] = value
-        else: # single process
-            for args in tqdm(args_list, desc="Loading data"):
-                result = load_data(args)
+        with Pool(processes=os.cpu_count()) as pool:
+            results = pool.map(load_data, args_list)
+            for result in results:
                 if result is not None:
                     key, value = result
                     data[key] = value
-                else:
-                    print("Warning: data not found")
 
-
-        # # calculate mean and std
-        # motion_list = np.concatenate(motion_list, axis=0)
-        # self.mean = np.mean(motion_list, axis=0)
-        # self.std = np.std(motion_list, axis=0)
-
-        splits = {
-                    'train':range(1,970),
-                    'val':range(306,638),
-                    'test':range(306,638)
-                }
+        # numeric splits
+        # splits = {
+        #             'train':range(1,970),
+        #             'val':range(306,638),
+        #             'test':range(306,638)
+        #         }
 
         # split dataset
         self.data_splits = {
@@ -150,13 +140,6 @@ class ARFriendDataModule(BASEDataModule):
             'val':[],
             'test':[],
         }
-        
-        # for k, v in data.items():
-        #     subject_id = k.split("_")[1]
-        #     sentence_id = int(k.split(".")[0][-3:])
-        #     for sub in ['train', 'val', 'test']:
-        #         if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-        #             self.data_splits[sub].append(v)
         
         def segmented_append(data_list, orig_v, seconds=5):
             audio_ticks = orig_v["audio"].shape[0]
@@ -170,20 +153,31 @@ class ARFriendDataModule(BASEDataModule):
                 new_v["template"] = orig_v["template"]
                 if (i+1) * 16000 * seconds <= audio_ticks:
                     new_v["audio"] = orig_v["audio"][i * 16000 * seconds : (i+1) * 16000 * seconds]
-                    # new_v["vertice"] = orig_v["vertice"][i * 30 * seconds : (i+1) * 30 * seconds]
                 else:
                     new_v["audio"] = orig_v["audio"][i * 16000 * seconds :]
-                    # new_v["vertice"] = orig_v["vertice"][i * 30 * seconds :]
                 data_list.append(new_v)
-    
-        for k, v in data.items():
-            subject_id = k.split("_")[1]
-            sentence_id = int(k.split(".")[0][-3:])
-            for sub in ['train', 'val', 'test']:
-                if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-                    segmented_append(self.data_splits[sub], v, seconds=self.segmented_append_seconds)
 
-        # self._sample_set = self.__getattr__("test_dataset")
+        # numeric splits
+        # for k, v in data.items():
+        #     subject_id = k.split("_")[1]
+        #     sentence_id = int(k.split(".")[0][-3:])
+        #     for sub in ['train', 'val', 'test']:
+        #         if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
+        #             segmented_append(self.data_splits[sub], v, seconds=self.segmented_append_seconds)
+        
+        for k, v in data.items():
+            date = k.split("_")[0]
+            subject_id = k.split("_")[1]
+            sentence_id = k.split(".")[0][-3:]
+            date_sentence = date + "_" + sentence_id
+            
+            if subject_id in self.subjects['train'] and date_sentence in train_list:
+                segmented_append(self.data_splits['train'], v, seconds=self.segmented_append_seconds)
+            if subject_id in self.subjects['val'] and date_sentence in test_list:
+                segmented_append(self.data_splits['val'], v, seconds=self.segmented_append_seconds)
+            if subject_id in self.subjects['test'] and date_sentence in test_list:
+                segmented_append(self.data_splits['test'], v, seconds=self.segmented_append_seconds) 
+
         print("Data splits stats:")
         print(len(self.data_splits['train']))
         print(len(self.data_splits['val']))
