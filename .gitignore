@@ -3,3 +3,5 @@ __pycache__
 experiments/
 checkpoints/
 results/
+demo/wavs
+evals/

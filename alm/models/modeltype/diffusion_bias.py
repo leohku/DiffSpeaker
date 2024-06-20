@@ -620,7 +620,9 @@ class DIFFUSION_BIAS(BaseModel):
         
         # extract the multimodal condition
         if multimodal:
-            rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1)
+            # rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1) # head angles and such
+            rel_emb = self.denoiser.rel_vector(torch.argmax(rel, dim = 1)).unsqueeze(1) # one hot, facing or not
+            
 
         # sample noise
         noise = torch.randn_like(vertice_input) # noise.shape = [batch_size, vert_len, vert_dim]
@@ -682,7 +684,8 @@ class DIFFUSION_BIAS(BaseModel):
         
         # extract the multimodal condition
         if multimodal:
-            rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1)
+            # rel_emb = self.denoiser.rel_vector(rel).unsqueeze(1)
+            rel_emb = self.denoiser.rel_vector(torch.argmax(rel, dim = 1)).unsqueeze(1) # one-hot, facing or not
         
         # sample noise
         vertices = torch.randn(

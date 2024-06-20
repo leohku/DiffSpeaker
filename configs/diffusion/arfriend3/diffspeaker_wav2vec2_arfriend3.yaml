@@ -1,13 +1,13 @@
 NAME: diffspeaker_wav2vec2_arfriend3 # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [2,3] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [2] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:
   #---------------------------------
   DATASETS: ['arfriend3'] # Training datasets
-  NUM_WORKERS: 8 # Number of workers
+  NUM_WORKERS: 4 # Number of workers
   BATCH_SIZE: 4 # Size of batches
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch

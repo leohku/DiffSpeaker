@@ -118,6 +118,12 @@ def parse_args(phase="train"):
             help="relative distance in meters"
         )
         group.add_argument(
+            "--facing",
+            type=str,
+            required=False,
+            help="whether both actors are facing each other, (yes/no)"
+        )
+        group.add_argument(
             "--out_dir",
             type=str,
             required=False,
@@ -132,19 +138,19 @@ def parse_args(phase="train"):
         group.add_argument(
             "--checkpoint",
             type=str,
-            required=True,
+            required=False,
             help="output seperate or combined npy file",
         )
         group.add_argument(
             "--id",
             type=str,
-            required=True,
+            required=False,
             help="the candiate subect identity",
         )
         group.add_argument(
             "--ply",
             type=str,
-            required=True,
+            required=False,
             help="the candiate subect identity",
         )
 
@@ -207,6 +213,7 @@ def parse_args(phase="train"):
         cfg.DEMO.EXAMPLE_FEMALE = params.example_female
         cfg.DEMO.ANGLE = params.angle
         cfg.DEMO.DISTANCE = params.distance
+        cfg.DEMO.FACING = params.facing
         cfg.DEMO.CHECKPOINTS = params.checkpoint
         cfg.DEMO.TEMPLATE = params.template
         cfg.DEMO.ID = params.id

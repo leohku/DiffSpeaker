@@ -83,9 +83,12 @@ def main():
     id[0, one_hot_id] = 1
 
     # make relative tensor
-    angle_rad = float(cfg.DEMO.ANGLE) * (np.pi / 180)
-    distance_m = float(cfg.DEMO.DISTANCE)
-    rel = torch.FloatTensor([math.sin(angle_rad), math.cos(angle_rad), distance_m]).unsqueeze(0)
+    # angle_rad = float(cfg.DEMO.ANGLE) * (np.pi / 180)
+    # distance_m = float(cfg.DEMO.DISTANCE)
+    # rel = torch.FloatTensor([math.sin(angle_rad), math.cos(angle_rad), distance_m]).unsqueeze(0)
+
+    rel = torch.FloatTensor([1,0] if cfg.DEMO.FACING == "yes" else [0,1]).unsqueeze(0)
+    print('Relative vector: ', rel)
 
     # make prediction
     logger.info("Making predictions")

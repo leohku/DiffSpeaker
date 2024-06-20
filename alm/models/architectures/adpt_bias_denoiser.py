@@ -104,6 +104,8 @@ class Adpt_Bias_Denoiser(nn.Module):
         # multimodal embedding
         # sin, cos angle of head, relative distance in meters
         self.rel_vector = nn.Linear(3, latent_dim)
+        # facing or not facing
+        # self.rel_vector = nn.Embedding(2, latent_dim * num_layers, )
 
         # whether we do not use cross attention
         self.no_cross = no_cross

@@ -1,7 +1,7 @@
 NAME: diffspeaker_wav2vec2_arfriend # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [2] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:
@@ -11,7 +11,8 @@ TRAIN:
   BATCH_SIZE: 4 # Size of batches
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch
-  RESUME: experiments/arfriend/diffusion_bias/diffspeaker_wav2vec2_arfriend/ # Resume training from this path
+  # RESUME: experiments/arfriend/diffusion_bias/diffspeaker_wav2vec2_arfriend/ # Resume training from this path
+  RESUME: ''
   OPTIM:
     TYPE: AdamW # Optimizer type
     LR: 1e-4 # Learning rate
@@ -83,7 +84,7 @@ DEMO:
 
 # Logger configuration
 LOGGER:
-  SACE_CHECKPOINT_EPOCH: 1
+  SACE_CHECKPOINT_EPOCH: 5
   LOG_EVERY_STEPS: 100
   VAL_EVERY_STEPS: 100000 # 200
   TENSORBOARD: True
