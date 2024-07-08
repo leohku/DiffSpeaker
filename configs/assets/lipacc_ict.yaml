@@ -1,0 +1,9 @@
+FOLDER: './experiments/lipacc_ict' # Experiment files saving path
+
+TEST:
+  FOLDER: './results' # Testing files saving path
+
+DATASET:
+  LIPACC_ICT:
+    ROOT: ./datasets/lipacc
+

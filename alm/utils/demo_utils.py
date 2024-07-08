@@ -132,10 +132,10 @@ def load_example_input(audio_path, processor = None):
 def render_mesh_helper(mesh, t_center, rot=np.zeros(3), tex_img=None, z_offset=0, template_type: str = "flame", rgb_per_v = None):
     
 
-    assert template_type in ["flame", "biwi"], "template_type should be one of ['flame', 'biwi'],but got {}".format(template_type)
+    assert template_type in ["flame", "biwi", "ict"], "template_type should be one of ['flame', 'biwi', 'ict'],but got {}".format(template_type)
 
 
-    if template_type == "flame":
+    if template_type == "flame" or template_type == "ict":
         camera_params = {'c': np.array([400, 400]),
                             'k': np.array([-0.19816071, 0.92822711, 0, 0, 0]),
                             'f': np.array([4754.97941935 / 2, 4754.97941935 / 2])}
@@ -245,8 +245,10 @@ def animate(vertices: np.array, wav_path: str, file_name: str, ply: str, fps: in
         template_type = "flame"
     elif "BIWI" in ply:
         template_type = "biwi"
+    elif "_ict" in ply:
+        template_type = "ict"
     else:
-        raise ValueError("Template type not recognized, please use either BIWI or FLAME")
+        raise ValueError("Template type not recognized, please use either BIWI, FLAME or ICT")
 
     # reshape vertices
     predicted_vertices = vertices.reshape(-1, vertices.shape[1]//3, 3) if vertices.ndim < 3 else vertices
