@@ -1,0 +1,8 @@
+FOLDER: './experiments/lipacc_arkit'
+
+TEST:
+  FOLDER: './results'
+
+DATASET:
+  LIPACC_ARKIT:
+    ROOT: ./datasets/lipacc

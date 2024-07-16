@@ -28,6 +28,20 @@ def vocaset_collate_fn(batch):
     }
     return adapted_batch
 
+def arkit_collate_fn(batch):
+    notnone_batches = [b for b in batch if b is not None]
+    # notnone_batches.sort(key=lambda x: x['vertice_length'], reverse=True)
+    adapted_batch = {
+        'audio': collate_tensors([b['audio'].float() for b in notnone_batches]),
+        'audio_attention': collate_tensors([b['audio_attention'] for b in notnone_batches]),
+        'vertice': collate_tensors([b['vertice'].float() for b in notnone_batches]),
+        'vertice_attention': collate_tensors([b['vertice_attention'] for b in notnone_batches]),
+        'id': collate_tensors([b['id'].float() for b in notnone_batches]),
+        'file_name': [b['file_name'] for b in notnone_batches],
+        'file_path': [b['file_path'] for b in notnone_batches],
+    }
+    return adapted_batch
+
 def arfriend2_collate_fn(batch):
     notnone_batches = [b for b in batch if b is not None]
     adapted_batch = {
@@ -154,6 +168,19 @@ def get_datasets(cfg, logger, phase='train'):
             data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")
             collate_fn = vocaset_collate_fn
             dataset = LipAccICTDataModule(
+                cfg = cfg,
+                data_root = data_root,
+                batch_size=cfg.TRAIN.BATCH_SIZE,
+                num_workers=cfg.TRAIN.NUM_WORKERS,
+                debug=cfg.DEBUG,
+                collate_fn=collate_fn,
+            )
+            datasets.append(dataset)
+        if dataset_name.lower() in ['lipacc_arkit']:
+            from .lipacc_arkit import LipAccARKitDataModule
+            data_root = eval(f"cfg.DATASET.{dataset_name.upper()}.ROOT")
+            collate_fn = arkit_collate_fn
+            dataset = LipAccARKitDataModule(
                 cfg = cfg,
                 data_root = data_root,
                 batch_size=cfg.TRAIN.BATCH_SIZE,

@@ -1,43 +1,43 @@
-NAME: diffspeaker_wav2vec2_lipacc_ict # Experiment name
+NAME: diffspeaker_wav2vec2_lipacc_arkit_hyper_layerx2 # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [6] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [4] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:
   #---------------------------------
-  DATASETS: ['lipacc_ict'] # Training datasets
+  DATASETS: ['lipacc_arkit'] # Training datasets
   NUM_WORKERS: 4 # Number of workers
-  BATCH_SIZE: 4 # Size of batches
+  BATCH_SIZE: 2 # Size of batches (from 4)
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch
   # RESUME: experiments/arfriend/diffusion_bias/diffspeaker_wav2vec2_lipacc/ # Resume training from this path
   RESUME: ''
   OPTIM:
     TYPE: AdamW # Optimizer type
-    LR: 1e-4 # Learning rate
+    LR: 1e-6 # Learning rate (from 1e-4)
 
 # Evaluating Configuration
 EVAL:
-  DATASETS: ['lipacc_ict'] # Evaluating datasets
+  DATASETS: ['lipacc_arkit'] # Evaluating datasets
   BATCH_SIZE: 32 # Evaluating Batch size
 
 # Datasets Configuration
 DATASET:
-  JOINT_TYPE: 'lipacc_ict' # join type
+  JOINT_TYPE: 'lipacc_arkit' # join type
 
 TEST:
-  CHECKPOINTS: checkpoints/arfriend/diffspeaker_wav2vec2_lipacc_ict.ckpt # Pretrained model path
-  DATASETS: ['lipacc_ict'] # training datasets
+  CHECKPOINTS: checkpoints/arfriend/diffspeaker_wav2vec2_lipacc_arkit.ckpt # Pretrained model path
+  DATASETS: ['lipacc_arkit'] # training datasets
   BATCH_SIZE: 1 # training Batch size
   SPLIT: test # split type
   REPLICATION_TIMES: 10 # replication times for each test sample
 
 # Losses Configuration
 LOSS:
-  TYPE: voca # Losses type
+  TYPE: voca_single # Losses type
   VERTICE_ENC: 1 # Lambda for vertices reconstruction Losses
-  VERTICE_ENC_V: 1 # lambda for vertices velocity reconstruction loss
+  VERTICE_ENC_V: 0 # lambda for vertices velocity reconstruction loss
   LIP_ENC: 0 # lambda for lip reconstruction loss
   LIP_ENC_V: 0 # lambda for lip velocity reconstruction loss
   DIST_SYNC_ON_STEP: True # Sync Losses on step when distributed trained
@@ -50,13 +50,13 @@ audio_encoder:
 model:
   target: 'diffusion/diffusion_bias_modules'
   audio_encoded_dim: 768 # audio hidden dimension
-  model_type: diffusion_bias # model type
-  latent_dim: 512 # latent dimension
+  model_type: diffusion_bias_arkit # model type
+  latent_dim: 1024 # latent dimension
   id_dim: 1 # the dimension of the id vector
-  ff_size: 1024 # latent_dim * 2
+  ff_size: 2048 # latent_dim * 2
   num_layers: 1 # number of layers
   num_heads: 4 # number of head layers
-  dropout: 0.1 # dropout rate
+  dropout: 0.5 # dropout rate
   max_len: 600 # the attention mask maximum length
   activation: gelu # activation type
   normalize_before: True 
@@ -84,7 +84,7 @@ DEMO:
 
 # Logger configuration
 LOGGER:
-  SACE_CHECKPOINT_EPOCH: 5
+  SACE_CHECKPOINT_EPOCH: 20
   LOG_EVERY_STEPS: 100
   VAL_EVERY_STEPS: 100000 # 200
   TENSORBOARD: True

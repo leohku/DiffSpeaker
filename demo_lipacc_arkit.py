@@ -24,11 +24,11 @@ def main():
         device = torch.device("cpu")
 
     # set up the logger
-    dataset = 'lipacc_ict' # TODO
+    dataset = 'lipacc_arkit' # TODO
     logger = create_logger(cfg, phase="demo")
 
     # set up the model architecture
-    cfg.DATASET.NFEATS = 42186
+    cfg.DATASET.NFEATS = 55
     model = get_model(cfg, dataset)
 
     if cfg.DEMO.EXAMPLE:
@@ -50,15 +50,6 @@ def main():
     model.to(device)
     model.eval()
 
-    # load the template
-    logger.info("Loading template mesh from {}".format(cfg.DEMO.TEMPLATE))
-    template_file = cfg.DEMO.TEMPLATE
-    with open(template_file, 'rb') as fin:
-        template = pickle.load(fin,encoding='latin1')
-        subject_id = cfg.DEMO.ID
-        assert subject_id in template, f'{subject_id} is not a subject included'
-        template = torch.Tensor(template[subject_id].reshape(-1))
-
     # paraterize the speaking style
     speaker_to_id = {
         "006Vasilisa": 0
@@ -76,7 +67,6 @@ def main():
     logger.info("Making predictions")
     data_input = {
         'audio': audio.to(device),
-        'template': template.to(device),
         'id': id.to(device),
     }
     with torch.no_grad():
@@ -87,13 +77,14 @@ def main():
     wav_path = cfg.DEMO.EXAMPLE
     test_name = os.path.basename(wav_path).split(".")[0]
     
-    output_dir = os.path.join(cfg.FOLDER, str(cfg.model.model_type), str(cfg.NAME), "samples_" + cfg.TIME)
-    file_name = os.path.join(output_dir,test_name + "_" + subject_id + '.mp4')
-    file_name_npy = os.path.join(output_dir,test_name + "_" + subject_id + '.npy')
+    subject_id = cfg.DEMO.ID
+    output_base_dir = os.path.join(cfg.FOLDER, str(cfg.model.model_type), str(cfg.NAME))
+    output_dir = os.path.join(output_base_dir, "samples_" + cfg.TIME)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    file_name = os.path.join(output_dir,test_name + "_" + subject_id + '.npy')
 
-    animate(vertices, wav_path, file_name, cfg.DEMO.PLY, fps=30, use_tqdm=True, multi_process=True)
-
-    np.save(file_name_npy, vertices)
+    np.save(file_name, vertices)
 
 if __name__ == "__main__":
     main()

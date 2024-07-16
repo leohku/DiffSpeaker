@@ -132,7 +132,7 @@ def parse_args(phase="train"):
         group.add_argument(
             "--ply",
             type=str,
-            required=True,
+            required=False,
             help="the candiate subect identity",
         )
 
