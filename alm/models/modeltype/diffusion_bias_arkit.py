@@ -6,7 +6,7 @@ from transformers import Wav2Vec2Model
 
 from alm.config import instantiate_from_config
 from alm.models.modeltype.base import BaseModel
-from alm.models.losses.voca_single import VOCALosses, MaskedConsistency, MaskedVelocityConsistency
+from alm.models.losses.arkit_lip_blendshapes import ARKitLoss, MaskedBlendshapeConsistency
 from alm.utils.demo_utils import animate
 from .base import BaseModel
 
@@ -31,19 +31,19 @@ class DIFFUSION_BIAS_ARKIT(BaseModel):
         super().__init__()
         self.cfg = cfg
         self.datamodule = datamodule
-
-        # set up losses
+        
         self._losses = MetricCollection({
-                split: VOCALosses(cfg=cfg, split=split)
-                for split in ["losses_train", "losses_test", "losses_val",] # "losses_train_val"
-            })
-
+            split: ARKitLoss()
+            for split in ["losses_train", "losses_val", "losses_test",]
+        })
+        
         self.losses = {
             key: self._losses["losses_" + key]
-            for key in ["train", "test", "val", ] # "train_val"
+            for key in ["train", "val", "test",]
         }
-        self.reconstruct = MaskedConsistency()
-        # self.reconstruct_v = MaskedVelocityConsistency()
+        
+        # actual loss function
+        self.masked_bs_consistency = MaskedBlendshapeConsistency(lip_weighting=1, non_lip_weighting=1)
 
         # set up model
         self.audio_encoder = Wav2Vec2Model.from_pretrained(cfg.audio_encoder.model_name_or_path)
@@ -116,13 +116,11 @@ class DIFFUSION_BIAS_ARKIT(BaseModel):
             #     batch['audio'][audio_mask] = 0
 
             rs_set = self._diffusion_forward(batch, batch_idx, phase="train")
-            
             mask = rs_set['vertice_attention'].unsqueeze(-1)
-            loss1 = self.reconstruct(rs_set['vertice'], rs_set['vertice_pred'], mask)
-            # loss2 = self.reconstruct_v(rs_set['vertice'], rs_set['vertice_pred'], mask)
-            loss = loss1 #+ loss2
-            self.losses[split].update(loss1, loss)
-            return loss
+            
+            lip_blendshape_loss, non_lip_blendshape_loss, total_loss = self.masked_bs_consistency(rs_set['vertice_pred'], rs_set['vertice'], mask)
+            self.losses[split].update(lip_blendshape_loss, non_lip_blendshape_loss, total_loss)
+            return total_loss
 
 
         if split in ["val", ]:
@@ -141,15 +139,13 @@ class DIFFUSION_BIAS_ARKIT(BaseModel):
                     # same as the training, we use the autoregressive inference
                     rs_set = self._diffusion_forward(batch, batch_idx, phase="val")
                     mask = rs_set['vertice_attention'].unsqueeze(-1)
-                    loss1 = self.reconstruct(rs_set['vertice'], rs_set['vertice_pred'], mask)
-                    # loss2 = self.reconstruct_v(rs_set['vertice'], rs_set['vertice_pred'], mask)
-                    loss = loss1 #+ loss2
-                    self.losses[split].update(loss1, loss) 
-
-                    if loss is None:
+                    lip_blendshape_loss, non_lip_blendshape_loss, total_loss = self.masked_bs_consistency(rs_set['vertice_pred'], rs_set['vertice'], mask)
+                    self.losses[split].update(lip_blendshape_loss, non_lip_blendshape_loss, total_loss)
+                    
+                    if total_loss is None:
                         return ValueError("loss is None")
                     
-                    loss_list.append(loss)
+                    loss_list.append(total_loss)
 
                 # visualize the result for the first id and the first batch
                 # if batch_idx == 0 and idx == 0:
