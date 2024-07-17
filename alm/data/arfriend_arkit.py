@@ -1,5 +1,5 @@
 from .base import BASEDataModule
-from alm.data.LipAccARKit import LipAccARKitDataset
+from alm.data.ARFriendARKit import ARFriendARKitDataset
 from transformers import Wav2Vec2Processor
 from collections import defaultdict
 
@@ -35,7 +35,7 @@ def load_data(args):
             print("Data loaded for " + file)
             return (key, result)
 
-class LipAccARKitDataModule(BASEDataModule):
+class ARFriendARKitDataModule(BASEDataModule):
     def __init__(self,
                 cfg,
                 batch_size,
@@ -47,24 +47,11 @@ class LipAccARKitDataModule(BASEDataModule):
                             num_workers=num_workers,
                             collate_fn=collate_fn)
         self.save_hyperparameters(logger=False)
-        self.name = 'LipAcc-ARKit'
-        self.Dataset = LipAccARKitDataset
+        self.name = 'ARFriendARKit'
+        self.Dataset = ARFriendARKitDataset
         self.cfg = cfg
         
-        # customized to LipAcc-ICT
-
-        # self.subjects = {
-        #     'train': [
-        #         '006Vasilisa'
-        #     ],
-        #     'val': [
-        #         '006Vasilisa'
-        #     ],
-        #     'test': [
-        #         '006Vasilisa'
-        #     ]
-        # }
-        
+        # customized to ARFriend-ARKit
         self.subjects = {
             'train': [
                 '001Sky',
@@ -95,7 +82,7 @@ class LipAccARKitDataModule(BASEDataModule):
             ]
         }
 
-        self.root_dir = kwargs.get('data_root', 'datasets/lipacc')
+        self.root_dir = kwargs.get('data_root', 'datasets/arfriend')
         self.audio_dir = 'wav'
         self.vertice_dir = 'arkit_npy'
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
@@ -112,7 +99,7 @@ class LipAccARKitDataModule(BASEDataModule):
             for f in fs:
                 args_list.append((f, self.root_dir, processor, self.audio_dir, self.vertice_dir, ))
 
-                # # comment off for full dataset
+                # comment off for full dataset
                 # count += 1
                 # if count > 10:
                 #     break
@@ -141,9 +128,9 @@ class LipAccARKitDataModule(BASEDataModule):
         # self.std = np.std(motion_list, axis=0)
 
         splits = {
-                    'train':range(2,44),
-                    'val':range(44,47),
-                    'test':range(44,47)
+                    'train':range(1,970),
+                    'val':range(306,638),
+                    'test':range(306,638)
                 }
 
         # split dataset

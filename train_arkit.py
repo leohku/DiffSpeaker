@@ -31,12 +31,13 @@ def main():
         resume = cfg.TRAIN.RESUME
         backcfg = cfg.TRAIN.copy()
         if os.path.exists(resume):
-            file_list = sorted(os.listdir(resume), reverse=True)
-            for item in file_list:
-                if item.endswith(".yaml"):
-                    cfg = OmegaConf.load(os.path.join(resume, item))
-                    cfg.TRAIN = backcfg
-                    break
+            # Don't load prev configs, just the checkpoint is enough
+            # file_list = sorted(os.listdir(resume), reverse=True)
+            # for item in file_list:
+            #     if item.endswith(".yaml"):
+            #         cfg = OmegaConf.load(os.path.join(resume, item))
+            #         cfg.TRAIN = backcfg
+            #         break
             checkpoints = sorted(os.listdir(os.path.join(
                 resume, "checkpoints")),
                                  key=lambda x: int(x[6:-5]),

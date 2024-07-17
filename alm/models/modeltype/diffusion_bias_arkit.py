@@ -43,7 +43,7 @@ class DIFFUSION_BIAS_ARKIT(BaseModel):
         }
         
         # actual loss function
-        self.masked_bs_consistency = MaskedBlendshapeConsistency(lip_weighting=1, non_lip_weighting=1)
+        self.masked_bs_consistency = MaskedBlendshapeConsistency(lip_weighting=cfg.LOSS.LIP_WEIGHTING, non_lip_weighting=cfg.LOSS.NON_LIP_WEIGHTING)
 
         # set up model
         self.audio_encoder = Wav2Vec2Model.from_pretrained(cfg.audio_encoder.model_name_or_path)

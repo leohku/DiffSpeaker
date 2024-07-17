@@ -1,0 +1,8 @@
+FOLDER: './experiments/arfriend_arkit'
+
+TEST:
+  FOLDER: './results'
+
+DATASET:
+  ARFRIEND_ARKIT:
+    ROOT: ./datasets/arfriend
