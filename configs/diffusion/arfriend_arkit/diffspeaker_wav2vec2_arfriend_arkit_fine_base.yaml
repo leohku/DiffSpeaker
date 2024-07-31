@@ -8,10 +8,10 @@ TRAIN:
   #---------------------------------
   DATASETS: ['arfriend_arkit'] # Training datasets
   NUM_WORKERS: 4 # Number of workers
-  BATCH_SIZE: 4 # Size of batches (from 4)
+  BATCH_SIZE: 2 # Size of batches (from 4)
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch
-  # RESUME: experiments/arfriend/diffusion_bias/diffspeaker_wav2vec2_lipacc/ # Resume training from this path
+  # RESUME: experiments/arfriend_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_arfriend_arkit_fine_base # Resume training from this path
   RESUME: ''
   OPTIM:
     TYPE: AdamW # Optimizer type

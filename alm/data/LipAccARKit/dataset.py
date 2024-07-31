@@ -35,6 +35,8 @@ class LipAccARKitDataset(data.Dataset):
         if self.data_type == "train":
             subject = file_name.split("_")[1]
             one_hot = self.one_hot_labels[self.subjects_dict["train"].index(subject)]
+            # random sample between subjects
+            # one_hot = self.one_hot_labels[np.random.randint(0, 7)]
         elif self.data_type == "val":
             one_hot = self.one_hot_labels
         elif self.data_type == "test":

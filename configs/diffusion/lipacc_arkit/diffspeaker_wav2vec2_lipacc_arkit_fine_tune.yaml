@@ -1,18 +1,18 @@
 NAME: diffspeaker_wav2vec2_lipacc_arkit_fine_tune # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [6] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [1] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:
   #---------------------------------
   DATASETS: ['lipacc_arkit'] # Training datasets
   NUM_WORKERS: 4 # Number of workers
-  BATCH_SIZE: 2 # Size of batches (from 4)
+  BATCH_SIZE: 4 # Size of batches (from 4)
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 9000 # End epoch
   # RESUME: ''
-  RESUME: experiments/arfriend_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_arfriend_arkit_fine_base/ # Resume training from this path
+  RESUME: experiments/arfriend_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_arfriend_arkit_fine_base_cont/ # Resume training from this path
   OPTIM:
     TYPE: AdamW # Optimizer type
     LR: 1e-6 # Learning rate (from 1e-4)
@@ -36,10 +36,8 @@ TEST:
 # Losses Configuration
 LOSS:
   TYPE: arkit_lip_blendshapes # Losses type
-  VERTICE_ENC: 1 # Lambda for vertices reconstruction Losses
-  VERTICE_ENC_V: 0 # lambda for vertices velocity reconstruction loss
-  LIP_ENC: 0 # lambda for lip reconstruction loss
-  LIP_ENC_V: 0 # lambda for lip velocity reconstruction loss
+  LIP_WEIGHTING: 20
+  NON_LIP_WEIGHTING: 1
   DIST_SYNC_ON_STEP: True # Sync Losses on step when distributed trained
 
 audio_encoder:
@@ -84,7 +82,7 @@ DEMO:
 
 # Logger configuration
 LOGGER:
-  SACE_CHECKPOINT_EPOCH: 50
+  SACE_CHECKPOINT_EPOCH: 100
   LOG_EVERY_STEPS: 100
   VAL_EVERY_STEPS: 100000 # 200
   TENSORBOARD: True
