@@ -67,6 +67,10 @@ def main():
     # load model weights
     logger.info("Loading checkpoints from {}".format(cfg.DEMO.CHECKPOINTS))
     state_dict = torch.load(cfg.DEMO.CHECKPOINTS, map_location="cpu")["state_dict"]
+    
+    # inspect keys
+    # for key in state_dict.keys():
+    #     logger.info(key)
 
     state_dict.pop("denoiser.PPE.pe") # this is not needed, since the sequence length can be any flexiable
     model.load_state_dict(state_dict, strict=False)

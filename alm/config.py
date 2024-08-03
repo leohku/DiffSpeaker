@@ -62,6 +62,10 @@ def parse_args(phase="train"):
             required=False,
             help="resume from a checkpoint",
         )
+        group.add_argument("--freeze_pretrained",
+                           action="store_true",
+                           required=False,
+                           help="freeze pretrained model")
         group.add_argument("--batch_size",
                            type=int,
                            required=False,
@@ -189,7 +193,10 @@ def parse_args(phase="train"):
         
         # resume from a checkpoint, added by Zhiyuan Ma
         cfg.TRAIN.RESUME = params.resume if params.resume else cfg.TRAIN.RESUME
-        
+
+        # freeze base pretrained model
+        cfg.TRAIN.FREEZE_PRETRAINED = params.freeze_pretrained if params.freeze_pretrained else cfg.TRAIN.FREEZE_PRETRAINED
+
         # no debug in test
         cfg.DEBUG = False if phase == "test" else cfg.DEBUG
         if phase == "test":
