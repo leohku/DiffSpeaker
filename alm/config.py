@@ -106,6 +106,18 @@ def parse_args(phase="train"):
             help="female input audio"
         )
         group.add_argument(
+            "--example_audio_cond",
+            type=str,
+            required=False,
+            help="audio condition"
+        )
+        group.add_argument(
+            "--example_vertice_cond",
+            type=str,
+            required=False,
+            help="vertice condition"
+        )
+        group.add_argument(
             "--out_dir",
             type=str,
             required=False,
@@ -193,6 +205,8 @@ def parse_args(phase="train"):
         cfg.DEMO.EXAMPLE = params.example
         cfg.DEMO.EXAMPLE_MALE = params.example_male
         cfg.DEMO.EXAMPLE_FEMALE = params.example_female
+        cfg.DEMO.EXAMPLE_AUDIO_COND = params.example_audio_cond
+        cfg.DEMO.EXAMPLE_VERTICE_COND = params.example_vertice_cond
         cfg.DEMO.CHECKPOINTS = params.checkpoint
         cfg.DEMO.TEMPLATE = params.template
         cfg.DEMO.ID = params.id
