@@ -13,6 +13,7 @@ TRAIN:
   END_EPOCH: 9000 # End epoch
   # RESUME: experiments/arfriend_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_arfriend_arkit_fine_base # Resume training from this path
   RESUME: ''
+  FREEZE_PRETRAINED: False
   OPTIM:
     TYPE: AdamW # Optimizer type
     LR: 1e-6 # Learning rate (from 1e-4)

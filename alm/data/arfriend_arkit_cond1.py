@@ -66,27 +66,8 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
         self.Dataset = ARFriendARKitCond1Dataset
         self.cfg = cfg
         
-        # customized to ARFriend-ARKit
         self.subjects = {
             'train': [
-                '001Sky',
-                '002Shirley',
-                '003Alan',
-                '005Richard',
-                '006Vasilisa',
-                '007Jessica',
-                '008Kunio',
-            ],
-            'val': [
-                '001Sky',
-                '002Shirley',
-                '003Alan',
-                '005Richard',
-                '006Vasilisa',
-                '007Jessica',
-                '008Kunio',
-            ],
-            'test': [
                 '001Sky',
                 '002Shirley',
                 '003Alan',
@@ -101,9 +82,13 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
         self.audio_dir = 'wav'
         self.vertice_dir = 'arkit_npy'
         processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
+        self.train_list_file = 'train_list.txt'
 
         self.nfeats = 55
         self.segmented_append_seconds = 5
+        
+        with open(os.path.join(self.root_dir, self.train_list_file), 'r') as fin:
+            train_list = [line.strip() for line in fin]
 
         # load
         data = defaultdict(dict)
@@ -112,7 +97,10 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
         args_list = []
         for r, ds, fs in os.walk(os.path.join(self.root_dir, self.audio_dir)):
             for f in fs:
-                args_list.append((f, self.root_dir, processor, self.audio_dir, self.vertice_dir, ))
+                date = f.split("_")[0]
+                scenario_id = f.split(".")[0].split("_")[-1].zfill(3)
+                if f'{date}_{scenario_id}' in train_list:
+                    args_list.append((f, self.root_dir, processor, self.audio_dir, self.vertice_dir, ))
 
                 # comment off for full dataset
                 # count += 1
@@ -120,21 +108,12 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
                 #     break
 
 
-        if True: # multi-process
-            with Pool(processes=os.cpu_count()) as pool:
-                results = pool.map(load_data, args_list)
-                for result in results:
-                    if result is not None:
-                        key, value = result
-                        data[key] = value
-        else: # single process
-            for args in tqdm(args_list, desc="Loading data"):
-                result = load_data(args)
+        with Pool(processes=os.cpu_count()) as pool:
+            results = pool.map(load_data, args_list)
+            for result in results:
                 if result is not None:
                     key, value = result
                     data[key] = value
-                else:
-                    print("Warning: data not found")
 
 
         # # calculate mean and std
@@ -142,25 +121,12 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
         # self.mean = np.mean(motion_list, axis=0)
         # self.std = np.std(motion_list, axis=0)
 
-        splits = {
-                    'train':range(1,970),
-                    'val':range(306,638),
-                    'test':range(306,638)
-                }
-
         # split dataset
         self.data_splits = {
             'train':[],
             'val':[],
             'test':[],
         }
-        
-        # for k, v in data.items():
-        #     subject_id = k.split("_")[1]
-        #     sentence_id = int(k.split(".")[0][-3:])
-        #     for sub in ['train', 'val', 'test']:
-        #         if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-        #             self.data_splits[sub].append(v)
         
         def segmented_append(data_list, orig_v, seconds=5):
             audio_ticks = orig_v["audio"].shape[0]
@@ -193,11 +159,8 @@ class ARFriendARKitCond1DataModule(BASEDataModule):
                 data_list.append(new_v)
     
         for k, v in data.items():
-            subject_id = k.split("_")[1]
-            sentence_id = int(k.split("_")[2])
-            for sub in ['train', 'val', 'test']:
-                if subject_id in self.subjects[sub] and sentence_id in splits[sub]:
-                    segmented_append(self.data_splits[sub], v, seconds=self.segmented_append_seconds)
+            for sub in ['train']:
+                segmented_append(self.data_splits[sub], v, seconds=self.segmented_append_seconds)
 
         # self._sample_set = self.__getattr__("test_dataset")
         print("Data splits stats:")
