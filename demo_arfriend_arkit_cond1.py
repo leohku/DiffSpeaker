@@ -50,12 +50,12 @@ def main():
         assert os.path.exists(audio_cond_path), 'audio condition does not exist'
         audio_cond = load_example_input(audio_cond_path)
     else:
-        raise NotImplemented
+        audio_cond = None
     
     if cfg.DEMO.EXAMPLE_VERTICE_COND:
         vertice_cond = torch.FloatTensor(np.load(cfg.DEMO.EXAMPLE_VERTICE_COND))
     else:
-        raise NotImplemented
+        vertice_cond = None
 
     # truncate or extend audio_cond if size of audio and audio_cond is different
     if audio.shape != audio_cond.shape:
@@ -100,10 +100,12 @@ def main():
     logger.info("Making predictions")
     data_input = {
         'audio': audio.to(device),
-        'audio_cond': audio_cond.to(device),
-        'vertice_cond': vertice_cond.to(device),
         'id': id.to(device),
     }
+    if audio_cond is not None:
+        data_input['audio_cond'] = audio_cond.to(device)
+    if vertice_cond is not None:
+        data_input['vertice_cond'] = vertice_cond.to(device)
     with torch.no_grad():
         prediction = model.predict(data_input)
         vertices = prediction['vertice_pred'].squeeze().cpu().numpy()

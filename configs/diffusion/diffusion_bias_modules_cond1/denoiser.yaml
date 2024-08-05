@@ -26,3 +26,5 @@ denoiser: # this is copied from configs/baselines/transformer_adpt_modules/trans
     guidance_uncondp: ${model.guidance_uncondp}
     period: ${model.period}
     no_cross: ${model.no_cross}
+    use_audio_cond: ${model.use_audio_cond}
+    use_vertice_cond: ${model.use_vertice_cond}

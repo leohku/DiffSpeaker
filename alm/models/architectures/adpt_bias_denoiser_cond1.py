@@ -32,6 +32,8 @@ class Adpt_Bias_Denoiser_Cond1(nn.Module):
                  tgt_attn_scale: float = 0.1,
                  period: int = 30,
                  no_cross: bool = False,
+                 use_audio_cond: bool = False,
+                 use_vertice_cond: bool = False,
                  **kwargs) -> None:
 
         super().__init__()
@@ -113,6 +115,10 @@ class Adpt_Bias_Denoiser_Cond1(nn.Module):
 
         # whether we do not use cross attention
         self.no_cross = no_cross
+        
+        # whether we use audio condition and vertice condition
+        self.use_audio_cond = use_audio_cond
+        self.use_vertice_cond = use_vertice_cond
 
     def forward(self,
                 vertice_input: torch.Tensor,
@@ -144,8 +150,9 @@ class Adpt_Bias_Denoiser_Cond1(nn.Module):
         vertice_input = self.PPE(vertice_input)
 
         # vertice condition projection
-        vertice_input_cond = self.vertice_map(vertice_input_cond)
-        vertice_input_cond = self.PPE(vertice_input_cond)
+        if self.use_vertice_cond:
+            vertice_input_cond = self.vertice_map(vertice_input_cond)
+            vertice_input_cond = self.PPE(vertice_input_cond)
 
         # time projection
         time_emb = self.time_proj(timesteps).to(vertice_input.device)
@@ -179,31 +186,33 @@ class Adpt_Bias_Denoiser_Cond1(nn.Module):
                 **kwargs
             )
         
-        # audio condition blocks
-        for mod,adapter in zip(self.audio_cond_transformer_decoder.layers, adapters):
-            vertice_out = mod(
-                tgt=vertice_out,
-                memory=hidden_state_cond,
-                adapter=adapter,
-                tgt_mask=tgt_mask,
-                tgt_key_padding_mask = tgt_key_padding_mask,
-                memory_mask=memory_mask,
-                memory_key_padding_mask=memory_key_padding_mask,
-                **kwargs
-            )
+        if self.use_audio_cond:
+            # audio condition blocks
+            for mod,adapter in zip(self.audio_cond_transformer_decoder.layers, adapters):
+                vertice_out = mod(
+                    tgt=vertice_out,
+                    memory=hidden_state_cond,
+                    adapter=adapter,
+                    tgt_mask=tgt_mask,
+                    tgt_key_padding_mask = tgt_key_padding_mask,
+                    memory_mask=memory_mask,
+                    memory_key_padding_mask=memory_key_padding_mask,
+                    **kwargs
+                    )
 
-        # vertice condition blocks
-        for mod,adapter in zip(self.vertice_cond_transformer_decoder.layers, adapters):
-            vertice_out = mod(
-                tgt=vertice_out,
-                memory=vertice_input_cond,
-                adapter=adapter,
-                tgt_mask=tgt_mask,
-                tgt_key_padding_mask = tgt_key_padding_mask,
-                memory_mask=memory_mask,
-                memory_key_padding_mask=memory_key_padding_mask,
-                **kwargs
-            )
+        if self.use_vertice_cond:
+            # vertice condition blocks
+            for mod,adapter in zip(self.vertice_cond_transformer_decoder.layers, adapters):
+                vertice_out = mod(
+                    tgt=vertice_out,
+                    memory=vertice_input_cond,
+                    adapter=adapter,
+                    tgt_mask=tgt_mask,
+                    tgt_key_padding_mask = tgt_key_padding_mask,
+                    memory_mask=memory_mask,
+                    memory_key_padding_mask=memory_key_padding_mask,
+                    **kwargs
+                )
 
         if self.no_cross: # remove the hidden state
             vertice_out = vertice_out[:, hidden_len:]

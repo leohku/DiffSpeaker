@@ -440,7 +440,11 @@ class DIFFUSION_BIAS_ARKIT_COND1(BaseModel):
         # process audio condition
         hidden_state = self._audio_2_hidden(batch['audio'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None) # hidden_state.shape = [batch_size, seq_len, latent_dim]
 
-        hidden_state_cond = self._audio_2_hidden(batch['audio_cond'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None)       
+        # Note: audio_cond will always be present at train time
+        if 'audio_cond' in batch:
+            hidden_state_cond = self._audio_2_hidden(batch['audio_cond'], batch['audio_attention'], length = batch['vertice'].shape[1] if 'vertice' in batch else None)
+        else:
+            hidden_state_cond = None
         
         if 'vertice_attention' not in batch:
             # if the vertice_attention is not given, we assume that all the vertices are valid, so we set the attention to be all ones
@@ -464,16 +468,19 @@ class DIFFUSION_BIAS_ARKIT_COND1(BaseModel):
             ) # vertice_output.shape = [batch_size, vert_len, vert_dim]
         
         elif phase == 'val':
-            vertice_input_cond = batch['vertice_cond']
+            if 'vertice_cond' in batch:
+                vertice_input_cond = batch['vertice_cond']
             
-            # ensuring same length between hidden_state and vertice_input_cond
-            if hidden_state.shape[1] != vertice_input_cond.shape[0]:
-                if hidden_state.shape[1] > vertice_input_cond.shape[0]:
-                    last_frame = vertice_input_cond[-1]
-                    padding = hidden_state.shape[1] - vertice_input_cond.shape[0]
-                    vertice_input_cond = torch.cat([vertice_input_cond, last_frame.unsqueeze(0).repeat(padding, 1)], dim = 0)
-                else:
-                    vertice_input_cond = vertice_input_cond[:hidden_state.shape[1]]
+                # ensuring same length between hidden_state and vertice_input_cond
+                if hidden_state.shape[1] != vertice_input_cond.shape[0]:
+                    if hidden_state.shape[1] > vertice_input_cond.shape[0]:
+                        last_frame = vertice_input_cond[-1]
+                        padding = hidden_state.shape[1] - vertice_input_cond.shape[0]
+                        vertice_input_cond = torch.cat([vertice_input_cond, last_frame.unsqueeze(0).repeat(padding, 1)], dim = 0)
+                    else:
+                        vertice_input_cond = vertice_input_cond[:hidden_state.shape[1]]
+            else:
+                vertice_input_cond = None
 
             if self.do_classifier_free_guidence:
                 silent_hidden_state = self._audio_2_hidden(
@@ -641,8 +648,9 @@ class DIFFUSION_BIAS_ARKIT_COND1(BaseModel):
         # extract the id style
         object_emb = self.denoiser.obj_vector(torch.argmax(id, dim = 1)).unsqueeze(1) # object_emb.shape = [batch_size, 1, latent_dim]
 
-        # unsqueeze vertice_input_cond to add batch size dimension)
-        vertice_input_cond = vertice_input_cond.unsqueeze(0).expand(hidden_state.shape[0], -1, -1)
+        if vertice_input_cond is not None:
+            # unsqueeze vertice_input_cond to add batch size dimension)
+            vertice_input_cond = vertice_input_cond.unsqueeze(0).expand(hidden_state.shape[0], -1, -1)
 
         # sample noise
         vertices = torch.randn(
