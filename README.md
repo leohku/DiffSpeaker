@@ -1,6 +1,8 @@
 # DiffSpeaker: Speech-Driven 3D Facial Animation with Diffusion Transformer
 ## [Paper](https://arxiv.org/pdf/2402.05712.pdf) | [Demo](https://www.youtube.com/watch?v=4-NBygHePk0)
 
+Test git
+
 ## Update
 - [07/02/2024]: The inference script is released. 
 - [06/02/2024]: The model weight is released.
