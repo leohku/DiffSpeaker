@@ -1,7 +1,7 @@
 NAME: diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
-DEVICE: [5] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
 
 # Training configuration
 TRAIN:

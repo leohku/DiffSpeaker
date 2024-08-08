@@ -186,6 +186,7 @@ class Adpt_Bias_Denoiser_Cond1(nn.Module):
                 **kwargs
             )
         
+        # if False:
         if self.use_audio_cond:
             # audio condition blocks
             for mod,adapter in zip(self.audio_cond_transformer_decoder.layers, adapters):

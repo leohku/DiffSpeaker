@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=4
 
 # --example datasets/lipacc/wav/20240504_006Vasilisa_046.wav \
 # --example demo/wavs/chemistry.wav \
@@ -11,12 +11,12 @@ export CUDA_VISIBLE_DEVICES=0
 # --example /home/leoho/faceformer/demo/wav/20231119_002Shirley_052.wav \
 # --example /data3/leoho/arfriend-diffspeaker/wav/20231126_003Alan_211.wav \
 
-EPOCH_NUMBER=3431
+EPOCH_NUMBER=3434
 
 python demo_lipacc_arkit.py \
     --cfg configs/diffusion/lipacc_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss.yaml \
     --cfg_assets configs/assets/lipacc_arkit.yaml \
-    --example /data3/leoho/arfriend-diffspeaker/wav/20231126_003Alan_211.wav \
+    --example /home/leoho/faceformer/demo/wav/20231119_002Shirley_052.wav \
     --checkpoint experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss/checkpoints/epoch=${EPOCH_NUMBER}.ckpt \
-    --id 003Alan
+    --id 002Shirley
     

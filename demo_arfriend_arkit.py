@@ -44,8 +44,29 @@ def main():
     # load model weights
     logger.info("Loading checkpoints from {}".format(cfg.DEMO.CHECKPOINTS))
     state_dict = torch.load(cfg.DEMO.CHECKPOINTS, map_location="cpu")["state_dict"]
-
     state_dict.pop("denoiser.PPE.pe") # this is not needed, since the sequence length can be any flexiable
+    state_dict_copy = {}    
+    
+    for key in state_dict.keys():
+        state_dict_copy[key] = state_dict[key]
+
+    # botched
+    # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/arfriend_arkit_cond1/diffusion_bias_arkit_cond1/diffspeaker_wav2vec2_arfriend_arkit_cond2/checkpoints/epoch=599.ckpt", map_location="cpu")["state_dict"]
+    
+    # lipacc
+    # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_hyper/checkpoints/epoch=4799.ckpt", map_location="cpu")["state_dict"]
+    
+    # fine tuned
+    # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss/checkpoints/epoch=3434.ckpt", map_location="cpu")["state_dict"]
+    # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid/checkpoints/epoch=3449.ckpt", map_location="cpu")["state_dict"]
+    # for key in lipacc_state_dict.keys():
+    #     if "transformer_decoder" in key:
+    #         # replace "transformer_decoder" with "lipacc_transformer_decoder
+    #         key2 = key.replace("transformer_decoder", "lipacc_transformer_decoder")
+    #         state_dict_copy[key2] = lipacc_state_dict[key]
+            
+    state_dict = state_dict_copy
+    
     model.load_state_dict(state_dict, strict=False)
     model.to(device)
     model.eval()

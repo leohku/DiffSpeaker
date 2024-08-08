@@ -81,6 +81,11 @@ class Adpt_Bias_Denoiser(nn.Module):
             decoder_layer=decoder_layer,
             num_layers=num_layers,
             )
+        
+        # self.lipacc_transformer_decoder = TransformerDecoder_w_Adapter(
+        #     decoder_layer=decoder_layer,
+        #     num_layers=num_layers,
+        # )
 
         # used for diffusion denoising
         self.time_proj = Timesteps(
@@ -151,6 +156,8 @@ class Adpt_Bias_Denoiser(nn.Module):
             vertice_out = torch.cat([hidden_state, vertice_out], dim=1)
             hidden_state = torch.cat([hidden_state, hidden_state], dim=1)
 
+        # vertice_out_clone = vertice_out.clone()    
+
         for mod,adapter in zip(self.transformer_decoder.layers, adapters):
             vertice_out = mod(
                 tgt=vertice_out,
@@ -162,6 +169,63 @@ class Adpt_Bias_Denoiser(nn.Module):
                 memory_key_padding_mask=memory_key_padding_mask,
                 **kwargs
             )
+
+        # for mod,adapter in zip(self.lipacc_transformer_decoder.layers, adapters):
+        #     vertice_out = mod(
+        #         tgt=vertice_out,
+        #         memory=hidden_state,
+        #         adapter=adapter,
+        #         tgt_mask=tgt_mask,
+        #         tgt_key_padding_mask = tgt_key_padding_mask,
+        #         memory_mask=memory_mask,
+        #         memory_key_padding_mask=memory_key_padding_mask,
+        #         **kwargs
+        #     )
+        
+        # vertice_out_clone[:, :, 30:36] = vertice_out[:, :, 30:36]
+        # vertice_out_clone[:, :, 37:49] = vertice_out[:, :, 37:49]
+        # vertice_out = vertice_out_clone
+        # vertice_out_clone = vertice_out.clone()
+        
+        # for mod,adapter in zip(self.lipacc_transformer_decoder.layers, adapters):
+        #     vertice_out = mod(
+        #         tgt=vertice_out,
+        #         memory=hidden_state,
+        #         adapter=adapter,
+        #         tgt_mask=tgt_mask,
+        #         tgt_key_padding_mask = tgt_key_padding_mask,
+        #         memory_mask=memory_mask,
+        #         memory_key_padding_mask=memory_key_padding_mask,
+        #         **kwargs
+        #     )
+        
+        # vertice_out_clone[:, :, 30:36] = vertice_out[:, :, 30:36]
+        # vertice_out_clone[:, :, 37:49] = vertice_out[:, :, 37:49]
+        # vertice_out = vertice_out_clone
+
+        # for mod,adapter in zip(self.transformer_decoder.layers, adapters):
+        #     vertice_out = mod(
+        #         tgt=vertice_out,
+        #         memory=hidden_state,
+        #         adapter=adapter,
+        #         tgt_mask=tgt_mask,
+        #         tgt_key_padding_mask = tgt_key_padding_mask,
+        #         memory_mask=memory_mask,
+        #         memory_key_padding_mask=memory_key_padding_mask,
+        #         **kwargs
+        #     )
+
+        # for mod,adapter in zip(self.lipacc_transformer_decoder.layers, adapters):
+        #     vertice_out = mod(
+        #         tgt=vertice_out,
+        #         memory=hidden_state,
+        #         adapter=adapter,
+        #         tgt_mask=tgt_mask,
+        #         tgt_key_padding_mask = tgt_key_padding_mask,
+        #         memory_mask=memory_mask,
+        #         memory_key_padding_mask=memory_key_padding_mask,
+        #         **kwargs
+        #     )
 
         if self.no_cross: # remove the hidden state
             vertice_out = vertice_out[:, hidden_len:]
