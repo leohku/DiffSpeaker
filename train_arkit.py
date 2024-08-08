@@ -170,8 +170,8 @@ def main():
     if cfg.TRAIN.FREEZE_PRETRAINED:
         for param in model.parameters():
             param.requires_grad = False
-        # unfreeze denoiser
-        for param in model.denoiser.parameters():
+        # unfreeze transformer decoder in denoiser
+        for param in model.denoiser.transformer_decoder.parameters():
             param.requires_grad = True
     
     logger.info("Training the following parameters:")
