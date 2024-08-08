@@ -1,4 +1,4 @@
-NAME: diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss # Experiment name
+NAME: diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss_train_denoiser # Experiment name
 DEBUG: False # Debug mode
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
 DEVICE: [4] # Index of gpus eg. [0] or [0,1,2,3]
@@ -8,12 +8,12 @@ TRAIN:
   #---------------------------------
   DATASETS: ['lipacc_arkit'] # Training datasets
   NUM_WORKERS: 4 # Number of workers
-  BATCH_SIZE: 4 # Size of batches (from 4)
+  BATCH_SIZE: 2 # Size of batches (from 4)
   START_EPOCH: 0 # Start epochMMOTIONENCODER
   END_EPOCH: 4100 # End epoch
   # RESUME: ''
   RESUME: experiments/arfriend_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_arfriend_arkit_fine_base_cont/ # Resume training from this path
-  FREEZE_PRETRAINED: False
+  FREEZE_PRETRAINED: True
   OPTIM:
     TYPE: AdamW # Optimizer type
     LR: 1e-6 # Learning rate (from 1e-4)

@@ -167,6 +167,18 @@ def main():
                 new_state_dict[k] = v
         model.load_state_dict(new_state_dict, strict=False)
 
+    if cfg.TRAIN.FREEZE_PRETRAINED:
+        for param in model.parameters():
+            param.requires_grad = False
+        # unfreeze denoiser
+        for param in model.denoiser.parameters():
+            param.requires_grad = True
+    
+    logger.info("Training the following parameters:")
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            logger.info(name)
+
     # fitting
     if cfg.TRAIN.RESUME:
         trainer.fit(model,
