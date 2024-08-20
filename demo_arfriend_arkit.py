@@ -57,13 +57,13 @@ def main():
     # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_hyper/checkpoints/epoch=4799.ckpt", map_location="cpu")["state_dict"]
     
     # fine tuned
-    # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss/checkpoints/epoch=3434.ckpt", map_location="cpu")["state_dict"]
+    lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid_no_face_loss/checkpoints/epoch=3434.ckpt", map_location="cpu")["state_dict"]
     # lipacc_state_dict = torch.load("/home/leoho/diffspeaker/experiments/lipacc_arkit/diffusion_bias_arkit/diffspeaker_wav2vec2_lipacc_arkit_fine_tune_fixid/checkpoints/epoch=3449.ckpt", map_location="cpu")["state_dict"]
-    # for key in lipacc_state_dict.keys():
-    #     if "transformer_decoder" in key:
-    #         # replace "transformer_decoder" with "lipacc_transformer_decoder
-    #         key2 = key.replace("transformer_decoder", "lipacc_transformer_decoder")
-    #         state_dict_copy[key2] = lipacc_state_dict[key]
+    for key in lipacc_state_dict.keys():
+        if "transformer_decoder" in key:
+            # replace "transformer_decoder" with "lipacc_transformer_decoder
+            key2 = key.replace("transformer_decoder", "lipacc_transformer_decoder")
+            state_dict_copy[key2] = lipacc_state_dict[key]
             
     state_dict = state_dict_copy
     

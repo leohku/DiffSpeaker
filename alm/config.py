@@ -136,13 +136,13 @@ def parse_args(phase="train"):
         group.add_argument(
             "--checkpoint",
             type=str,
-            required=True,
+            required=False,
             help="output seperate or combined npy file",
         )
         group.add_argument(
             "--id",
             type=str,
-            required=True,
+            required=False,
             help="the candiate subect identity",
         )
         group.add_argument(
